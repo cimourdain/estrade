@@ -1,0 +1,22 @@
+__pycache__
+
+# coverage
+.coverage
+htmlcov/
+
+# confidential
+*ig_credentials.yaml
+
+
+# dev files
+.venv
+.idea
+data/*
+*data.sqlite*
+errors.log
+reports/*
+/test_*
+*egg-info/
+dist/*
+build/*
+samples/providers/database/migration.py

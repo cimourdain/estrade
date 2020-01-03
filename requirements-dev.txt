@@ -1,0 +1,10 @@
+factory_boy
+flake8
+freezegun
+py-spy
+pytest
+pytest-cov
+pytest-mock
+pdbpp
+setuptools
+twine

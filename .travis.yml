@@ -1,0 +1,11 @@
+language: python
+python:
+  - "3.6"      # current default Python on Travis CI
+# command to install dependencies
+install:
+  - pip install -r requirements.txt
+  - pip install -r requirements-dev.txt
+# command to run tests
+script:
+  - pytest tests/
+  - flake8  --max-line-length 120 estrade/
