@@ -1,19 +1,18 @@
 import logging
 
-from estrade.classes.abstract.Areporting import AReporting
+from estrade.mixins.reporting_mixin import ReportingMixin
 from estrade.utils.csv import CSVWriter
 
 logger = logging.getLogger(__name__)
 
 
-class ReportingCSV(AReporting):
-
+class ReportingCSV(ReportingMixin):
     @property
     def base_path(self):
-        return self._market.ref
+        return self.market.ref
 
     def strategy_path(self, strategy):
-        return '{}/{}/'.format(self.market.ref, strategy.ref)
+        return f'{self.market.ref}/{strategy.ref}/'
 
     def on_new_tick(self, tick):
         pass
@@ -46,6 +45,7 @@ class ReportingCSV(AReporting):
             path=self.base_path,
             filename='strategies_report.csv',
             dict_list=strategies_dicts,
-            headers=self._market.strategies[0].json_headers,
+            headers=self.market.strategies[0].json_headers,
         )
+        logger.info('Reporting file was writen in %s' % self.base_path)
         print(strategies_dicts)

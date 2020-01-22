@@ -1,0 +1,3 @@
+# Strategy
+
+::: estrade.strategy.Strategy

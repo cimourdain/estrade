@@ -1,12 +1,15 @@
-# classes
-from estrade.classes.abstract.Aprovider import AProvider, ALiveProvider  # noqa
-from estrade.classes.strategy import Strategy  # noqa
-from estrade.classes.abstract.Areporting import AReporting  # noqa
+__version__ = '0.0.1'
 
-from estrade.classes.candle_set import CandleSet  # noqa
-from estrade.classes.epic import Epic  # noqa
-from estrade.classes.market import Market  # noqa
-from estrade.classes.tick import Tick  # noqa
+# classes
+from estrade.strategy import Strategy  # noqa
+from estrade.mixins.reporting_mixin import ReportingMixin  # noqa
+
+from estrade.candle import Candle  # noqa
+from estrade.candle_set import CandleSet  # noqa
+from estrade.epic import Epic  # noqa
+from estrade.market import Market  # noqa
+from estrade.tick import Tick  # noqa
+from estrade.provider import Provider  # noqa
 
 # indicators
 from estrade.indicators.candle_set.moving_average import (  # noqa

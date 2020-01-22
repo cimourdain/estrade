@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 from random import choice, randint
 
 from estrade import Strategy
@@ -12,22 +13,36 @@ class RandomStrategy(Strategy):
     """
     random_factor = 1000
 
-    def check_tick_time(self, tick):
+    def set_stop(self, tick_datetime):
         """
-        Only run strategy bewteen 10h and 11H
-        :param tick: <estrade.classes.tick.Tick> instance
-        :return:
+        Stop strategy after 3 trades.
         """
-        if 10 <= tick.datetime.hour < 11:
-            return True
-        return False
+        if len(self.get_trades()) >= 3:
+            logger.warning('Stop strategy after 3 trades')
+            self.stopped = True
+
+    def set_pause(self, tick_datetime):
+        """
+        Pause strategy for 30 mn if last trade was lost.
+        """
+        trades = self.get_trades(only_closed=True)
+        if trades and self.meta.get('last_trade_causing_pause') != trades[-1] and trades[-1].result < 0:
+            # pause for 30 mn after the last trade close datetime
+            self.paused_until = trades[-1].last_tick.datetime + timedelta(minutes=30)
+            self.meta['last_trade_causing_pause'] = trades[-1]
+            logger.debug('Pause until %s' % self.paused_until)
 
     def on_new_tick_opening_strategy(self, tick):
+        """
+        Opening strategy: executed when number of opened trades < self.max_concurrent_trades
+
+        this strategy randomly open a trade.
+        """
         r = randint(0, self.random_factor)
         if r == 0:
             logger.info('open trade from random strategy')
             self.open_trade(
-                epic=tick.epic.code,
+                epic=tick.epic,
                 quantity=1,
                 direction=choice([-1, 1]),
                 stop_relative=5,
@@ -36,8 +51,8 @@ class RandomStrategy(Strategy):
     def on_new_tick_closing_strategy(self, tick):
         """
         Closing strategy: executed when a trade is open
-        :param tick: <estrade.classes.tick.Tick> instance
-        :return:
+
+        this strategy randomly close opened trades.
         """
         r = randint(0, self.random_factor)
         if r == 0:

@@ -1,48 +1,34 @@
-SHELL := /bin/bash
-VENV_NAME?=.venv
-VENV_ACTIVATE=. $(VENV_NAME)/bin/activate
-PYTHON_PATH=/usr/bin/python3.6
-PYTHON_EXE=python3
+PYVERSION ?= py36
 
+DOCKER_RUN = docker-compose run --rm estrade-$(PYVERSION)
 
+shell:
+	$(DOCKER_RUN) bash
 
-install: 
-	( \
-		rm -rf $(VENV_NAME)/; \
-		$(PYTHON_EXE) -m virtualenv $(VENV_NAME) -p $(PYTHON_PATH); \
-		$(VENV_ACTIVATE); \
-		echo "${VIRTUAL_ENV}"; \
-		pip list; \
-		pip install -r requirements.txt; \
-		pip list; \
-		deactivate; \
-	)
-
-install-dev: install
-	( \
-		$(VENV_ACTIVATE); \
-		pip install -r requirements-dev.txt; \
-		pip list; \
-		deactivate; \
-	)
-
-test: 
-	( \
-		$(VENV_ACTIVATE); \
-		pytest tests/ -x --log-level=DEBUG; \
-		deactivate; \
-	)
-
-test-cov:
-	( \
-		$(VENV_ACTIVATE); \
-		pytest --cov=estrade/ --cov-report html tests/ -x; \
-		deactivate; \
-	)
+test:
+	$(DOCKER_RUN) make test-local
 
 lint:
-	( \
-		$(VENV_ACTIVATE); \
-		flake8  --max-line-length 120 estrade/ ; \
-		deactivate; \
-	)
+	$(DOCKER_RUN) make lint-local
+
+docs:
+	$(DOCKER_RUN) make docs-local
+
+ci:
+	$(DOCKER_RUN) make ci-local
+
+
+init-local:
+	poetry install
+
+test-local: init-local
+	poetry run pytest --cov=estrade/ tests/ -x
+
+lint-local: init-local
+	poetry run flake8 estrade
+	poetry run black estrade -S --check --diff
+
+docs-local: init-local
+	poetry run mkdocs build --clean
+
+ci-local: test-local lint-local docs-local

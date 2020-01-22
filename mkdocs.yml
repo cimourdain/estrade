@@ -1,0 +1,36 @@
+site_name: Estrade
+site_description: Build, Backtest and Go Live your own trading bots
+site_author: Gabriel Oger
+
+repo_name: cimourdain/estrade
+repo_url: https://github.com/cimourdain/estrade
+edit_uri: ""
+
+theme:
+  name: 'material'
+
+markdown_extensions:
+  - codehilite
+  - admonition
+  - codehilite
+
+plugins:
+  - mkdocstrings
+
+nav:
+  - Home: index.md
+  - Install: install.md
+  - Quickstart: quickstart.md
+  - Reference:
+      - Candle: reference/candle.md
+      - Candle Set: reference/candle_set.md
+      - Epic: reference/epic.md
+      - Indicators:
+          - Candle Set Indicators:
+              - Simple Moving Average: reference/indicators/candle_set/moving_average.md
+              - Exponential Moving Average: reference/indicators/candle_set/exponential_moving_average.md
+      - Provider: reference/provider.md
+      - Strategy: reference/strategy.md
+      - Trade: reference/trade.md
+      - Trade Manager: reference/trade_manager.md
+

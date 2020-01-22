@@ -1,22 +1,38 @@
 __pycache__
 
-# coverage
+#### virtualenv
+venv/*
+.venv/*
+
+#### IDE
+.idea
+
+#### tmp files
+/test_*
+old/*
+
+#### build
+*egg-info/
+dist/*
+
+#### sample testing
+data/*
+reports/*
+errors.log
+samples/providers/database/migration.py
+
+#### doc
+/docs/_build
+site/
+build/*
+_build/*
+
+### pytest
+htmlcov/*
 .coverage
 htmlcov/
 
-# confidential
-*ig_credentials.yaml
+# mypy
+.mypy_cache/
 
 
-# dev files
-.venv
-.idea
-data/*
-*data.sqlite*
-errors.log
-reports/*
-/test_*
-*egg-info/
-dist/*
-build/*
-samples/providers/database/migration.py

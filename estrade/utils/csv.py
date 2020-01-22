@@ -5,15 +5,14 @@ REPORT_FOLDER = 'reports'
 
 
 class CSVWriter:
-
     @staticmethod
     def open_file(path, filename, report_folder=None):
-        path = '{}/{}'.format(REPORT_FOLDER if not report_folder else report_folder, path)
+        path = f'{report_folder or REPORT_FOLDER}/{path}'
         open_mode = 'a'
         if not os.path.exists(path):
             os.makedirs(path)
 
-        file_path = '{}/{}'.format(path, filename)
+        file_path = f'{path}/{filename}'
         file_exists = True
         if not os.path.isfile(file_path):
             open_mode = 'w+'

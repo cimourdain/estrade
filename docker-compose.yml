@@ -1,0 +1,26 @@
+version: "2.1"
+
+services:
+  estrade:
+    build:
+      context: .
+    volumes:
+     - ${PWD}:/estrade
+  estrade-py36:
+    extends:
+      service: estrade
+    build:
+      args:
+        image_name: "3.6.10-stretch"
+  estrade-py37:
+    extends:
+      service: estrade
+    build:
+      args:
+        image_name: "3.7.6-stretch"
+  estrade-py38:
+    extends:
+      service: estrade
+    build:
+      args:
+        image_name: "3.8.2-buster"
