@@ -9,7 +9,7 @@ htmlcov/
 
 
 # dev files
-.venv
+venv/*
 .idea
 data/*
 *data.sqlite*
@@ -20,3 +20,8 @@ reports/*
 dist/*
 build/*
 samples/providers/database/migration.py
+
+
+# doc
+/docs/_build/*
+/docs/*.bat

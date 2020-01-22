@@ -1,13 +1,13 @@
 import logging
 
-from estrade.classes.abstract.Amarket_class import AMarketOptionalClass
-from estrade.classes.exceptions import ReportingException
+from estrade.market_mixin import MarketOptionalMixin
+from estrade.exceptions import ReportingException
 
 
 logger = logging.getLogger(__name__)
 
 
-class AReporting(AMarketOptionalClass):
+class AReporting(MarketOptionalMixin):
     """
     Define Reporting Abstract class.
     A reporting class is able to generate reporting:
@@ -17,7 +17,7 @@ class AReporting(AMarketOptionalClass):
         - when all ticks are generated
     """
     def __init__(self, log_level=None):
-        AMarketOptionalClass.__init__(self, market=None)
+        MarketOptionalMixin.__init__(self, market=None)
 
     def _post_set_market(self):
         """
@@ -51,7 +51,7 @@ class AReporting(AMarketOptionalClass):
     def on_new_tick(self, tick):
         """
         Method called when a new tick is received by market
-        :param tick: <estrade.classes.tick.Tick>
+        :param tick: <estrade.tick.Tick>
         :return:
         """
         raise NotImplementedError('To report on every tick, please implement your Reporting ')
@@ -60,7 +60,7 @@ class AReporting(AMarketOptionalClass):
         """
         Method called when a trade is created/updated/closed
         # TODO: implement events in trade_manager
-        :param trade: <estrade.classes.trade.Trade>
+        :param trade: <estrade.trade.Trade>
         :return:
         """
         raise NotImplementedError('To report on every epic update, please implement your Reporting ')

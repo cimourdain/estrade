@@ -1,7 +1,7 @@
 import pytest
 
 from tests.factories import CandleFactory, TickFactory
-from estrade.classes.exceptions import CandleException
+from estrade.exceptions import CandleException
 
 
 class TestCandle:

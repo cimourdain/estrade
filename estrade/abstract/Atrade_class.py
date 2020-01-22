@@ -1,7 +1,7 @@
 import logging
 
-from estrade.classes.abstract import get_exception
-from estrade.classes.trade import Trade
+from estrade.abstract import get_exception
+from estrade.trade import Trade
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,6 @@ class ATradeClassUser:
             return
 
         if not isinstance(trade_class, type) or not issubclass(trade_class, Trade):
-            raise get_exception(self)('Trade class must be a sub class of <estrade.classes.trade.Trade>.')
+            raise get_exception(self)('Trade class must be a sub class of <estrade.trade.Trade>.')
 
         self._trade_class = trade_class

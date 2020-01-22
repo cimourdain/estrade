@@ -2,12 +2,12 @@
 """
 import logging
 
-from estrade.classes.abstract.Aref_class import ARefClass
-from estrade.classes.exceptions import TradeException
-from estrade.classes.observer import Observable
-from estrade.classes.stop_limit import StopLimitAbsolute, StopLimitRelative
-from estrade.classes.strategy import Strategy
-from estrade.classes.tick import Tick
+from estrade.ref_mixin import RefMixin
+from estrade.exceptions import TradeException
+from estrade.observer import Observable
+from estrade.stop_limit import StopLimitAbsolute, StopLimitRelative
+from estrade.strategy import Strategy
+from estrade.tick import Tick
 
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ class TradeClose:
     def __init__(self, tick, quantity, result, reason):
         """
         Init a trade close
-        :param tick: <estrade.classes.tick.Tick> instance
+        :param tick: <estrade.tick.Tick> instance
         :param quantity: <int>
         :param result: <float>
         :param reason: <str>
@@ -44,7 +44,7 @@ class TradeClose:
         }
 
 
-class Trade(ARefClass, Observable):
+class Trade(RefMixin, Observable):
     """
         The Trade class manage trades (=market positions)
     """
@@ -52,12 +52,12 @@ class Trade(ARefClass, Observable):
                  stop_absolute=None, stop_relative=None, limit_absolute=None, limit_relative=None, meta=None):
         """
         Init a new trade
-        :param tick: <estrade.classes.tick.Tick> instance : trade open tick
+        :param tick: <estrade.tick.Tick> instance : trade open tick
         :param epic: <str> epic ref
         :param quantity: <int> opened quantity
-        :param trade_manager: <estrade.classes.trade_manager.TradeManager> trade manager managing this trade
+        :param trade_manager: <estrade.trade_manager.TradeManager> trade manager managing this trade
         :param direction: <int> in [1, -1, 'BUY', 'SELL'] trade direction (buy or sell)
-        :param strategy: <estrade.classes.Astrategy.Astrategy> child instance => strategy that generated this trade
+        :param strategy: <estrade.Astrategy.Astrategy> child instance => strategy that generated this trade
         :param ref: <str> trade reference
         :param stop_absolute: <int> absolute stop
         :param stop_relative: <int> relative stop
@@ -66,7 +66,7 @@ class Trade(ARefClass, Observable):
         :param meta: <dict> free of use dict to register provider events etc.
         """
         # set ref with parent class
-        ARefClass.__init__(self, ref)
+        RefMixin.__init__(self, ref)
         # set class as observable so it can fire events
         # TODO : fire events on trade update
         Observable.__init__(self)
@@ -132,7 +132,7 @@ class Trade(ARefClass, Observable):
     def is_open_tick_valid(tick):
         """
         Check that tick provided is valid
-        :param tick: <estrade.classes.tick.Tick> instance
+        :param tick: <estrade.tick.Tick> instance
         :return: <bool> True if tick valid and epic tradeable else False
         """
         if not Trade.is_tick_valid(tick):
@@ -147,7 +147,7 @@ class Trade(ARefClass, Observable):
     def is_tick_valid(tick):
         """
         Check if a tick is a valid class instance
-        :param tick: <estrade.classes.tick.Tick> instance
+        :param tick: <estrade.tick.Tick> instance
         :return: <bool>
         """
         return isinstance(tick, Tick)
@@ -156,7 +156,7 @@ class Trade(ARefClass, Observable):
     def is_tick_tradeable(tick):
         """
         Check if tick epic is tradeable
-        :param tick: <estrade.classes.tick.Tick> instance
+        :param tick: <estrade.tick.Tick> instance
         :return: <bool>
         """
         return tick.epic.tradeable
@@ -168,7 +168,7 @@ class Trade(ARefClass, Observable):
     def trade_manager(self):
         """
         return trade manager that holds this trade
-        :return: <estrade.classes.trade_manager.TradeManager>
+        :return: <estrade.trade_manager.TradeManager>
         """
         return self._trade_manager
 
@@ -176,11 +176,11 @@ class Trade(ARefClass, Observable):
     def trade_manager(self, trade_manager):
         """
         Set the trade manager that holds this trade
-        :param trade_manager: <estrade.classes.trade_manager.TradeManager>
+        :param trade_manager: <estrade.trade_manager.TradeManager>
         :return:
         """
         # import here to prevent import loop
-        from estrade.classes.trade_manager import TradeManager
+        from estrade.trade_manager import TradeManager
 
         if trade_manager is None:
             self._trade_manager = None
@@ -224,7 +224,7 @@ class Trade(ARefClass, Observable):
     def strategy(self):
         """
         Returns the strategy that generated this trade
-        :return: <estrade.classes.strategy.Strategy> child instance or None
+        :return: <estrade.strategy.Strategy> child instance or None
         """
         return self._strategy
 
@@ -235,7 +235,7 @@ class Trade(ARefClass, Observable):
             - if strategy is provided in params, set this strategy
             - else if only one strategy is registered on market -> use this strategy
             - else raise error
-        :param strategy: <estrade.classes.strategy.Strategy> child instance or None
+        :param strategy: <estrade.strategy.Strategy> child instance or None
         :return:
         """
         if strategy is None:
@@ -263,7 +263,7 @@ class Trade(ARefClass, Observable):
         :param type_: <str> in ['STOP', 'LIMIT']
         :param value: <int> or <float>
         :param relative: <bool>
-        :return: <estrade.classes.stop_limit.AbstractStopLimit> child instance
+        :return: <estrade.stop_limit.AbstractStopLimit> child instance
         """
         if value is None:
             return None
@@ -290,7 +290,7 @@ class Trade(ARefClass, Observable):
     def stop(self):
         """
         Return trade stop
-        :return: <estrade.classes.stop_limit.AbstractStopLimit> Child
+        :return: <estrade.stop_limit.AbstractStopLimit> Child
         """
         return self._stop
 
@@ -319,7 +319,7 @@ class Trade(ARefClass, Observable):
     def limit(self):
         """
         return trade limit
-        :return: <estrade.classes.stop_limit.AbstractStopLimit> Child
+        :return: <estrade.stop_limit.AbstractStopLimit> Child
         """
         return self._limit
 
@@ -348,7 +348,7 @@ class Trade(ARefClass, Observable):
     def epic(self):
         """
         get trade epic
-        :return: <estrade.classes.epic.Epic> instance
+        :return: <estrade.epic.Epic> instance
         """
         return self.ticks[0].epic
 
@@ -359,7 +359,7 @@ class Trade(ARefClass, Observable):
     def open_tick(self):
         """
         get trade open tick
-        :return: <estrade.classes.tick.Tick> instance
+        :return: <estrade.tick.Tick> instance
         """
         return self.ticks[0]
 
@@ -413,7 +413,7 @@ class Trade(ARefClass, Observable):
         """
         Total or partial close of trade.
 
-        :param tick: <estrade.classes.tick.Tick> instance -> tick to use for close
+        :param tick: <estrade.tick.Tick> instance -> tick to use for close
             (if not provided, last received tick will be used)
         :param quantity: <int> -> quantities to close
             (if not provided, all opened quantities will be closed)
@@ -473,7 +473,7 @@ class Trade(ARefClass, Observable):
     def _calculate_result(self, close_tick=None, quantity=None):
         """
         Calculate trade result for close.
-        :param sell_tick: <estrade.classes.tick.Tick> instance -> tick to use to calculate close result
+        :param sell_tick: <estrade.tick.Tick> instance -> tick to use to calculate close result
             (if not provided, the last tick received by trade will be used)
         :param quantity: <int> -> quantities to close
         :return:
@@ -521,7 +521,7 @@ class Trade(ARefClass, Observable):
     def on_new_tick(self, tick):
         """
         Method triggered when a new tick is received by trade_manager.
-        :param tick: <estrade.classes.tick.Tick> instance
+        :param tick: <estrade.tick.Tick> instance
         :return:
         """
         if not self.closed:
@@ -533,14 +533,20 @@ class Trade(ARefClass, Observable):
             # check stop/limit
             logger.debug('Check if tick value reached stop (%s) or limit (%s)' % (self.stop, self.limit))
             if self.stop and self.stop.check(tick):
-                self.close(close_reason='stop')
+                if self.trade_manager:
+                    self.trade_manager.close_trade(trade=self, close_reason='stop')
+                else:
+                    self.close(close_reason='stop')
             elif self.limit and self.limit.check(tick):
-                self.close(close_reason='limit')
+                if self.trade_manager:
+                    self.trade_manager.close_trade(trade=self, close_reason='limit')
+                else:
+                    self.close(close_reason='limit')
 
     def _add_new_tick(self, tick):
         """
         Method to add a new tick to trade
-        :param tick: <estrade.classes.tick.Tick> instance
+        :param tick: <estrade.tick.Tick> instance
         :return:
         """
         if not Trade.is_tick_valid(tick):
@@ -608,11 +614,12 @@ class Trade(ARefClass, Observable):
         return base_headers
 
     def __repr__(self):
-        repr_string = '{}: Trade for {} @ {} with ref: {}'.format(
+        repr_string = '{}: Trade for {} @ {} with ref: {} on strategy {}'.format(
             self.open_tick.datetime,
             self.inital_quantities,
             self.open,
-            self.ref
+            self.ref,
+            self.strategy.ref if self.strategy else None
         )
         if self.stop:
             repr_string = '{}, stop absolute: {}, stop relative {}'.format(

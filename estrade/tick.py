@@ -1,8 +1,8 @@
 import arrow
 from datetime import datetime
 
-from estrade.classes.epic import Epic
-from estrade.classes.exceptions import TickException
+from estrade.epic import Epic
+from estrade.exceptions import TickException
 
 
 class Tick:
@@ -12,7 +12,7 @@ class Tick:
     def __init__(self, epic, datetime, bid, ask):
         """
         Create a new tick.
-        :param epic: <estrade.classes.epic.Epic> instance => tick epic
+        :param epic: <estrade.epic.Epic> instance => tick epic
         :param datetime: <datetime.datetime> tick datetime
         :param bid: <float> market bid value for this tick
         :param ask: <float> market ask value for this tick

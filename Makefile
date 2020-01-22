@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-VENV_NAME?=.venv
+VENV_NAME?=venv
 VENV_ACTIVATE=. $(VENV_NAME)/bin/activate
 PYTHON_PATH=/usr/bin/python3.6
 PYTHON_EXE=python3

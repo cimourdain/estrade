@@ -7,7 +7,7 @@ from tests.factories import (
     TickFactory,
     TradeFactory,
 )
-from estrade.classes.exceptions import StopLimitException
+from estrade.exceptions import StopLimitException
 
 
 class TestStopLimitEmpty:

@@ -1,14 +1,11 @@
 import pytest
-from datetime import datetime, timezone
-from dateutil import tz
 
 from tests.factories import (
     CandleSetFactory,
     EpicFactory,
-    MarketFactory,
-    TickFactory
+    MarketFactory
 )
-from estrade.classes.exceptions import EpicException
+from estrade.exceptions import EpicException
 
 
 class TestEpic:

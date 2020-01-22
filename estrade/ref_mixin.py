@@ -1,9 +1,9 @@
 import uuid
 
-from estrade.classes.abstract import get_exception
+from estrade.abstract import get_exception
 
 
-class ARefClass:
+class RefMixin:
     """
     Abstract class to use as parent of clases having a reference
     """

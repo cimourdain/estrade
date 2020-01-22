@@ -1,10 +1,9 @@
 import pytest
 
-from estrade.classes.exceptions import TradeException
+from estrade.exceptions import TradeException
 from tests.factories import (
     EpicFactory,
     MarketFactory,
-    StrategyFactory,
     TickFactory,
     TradeFactory,
     TradeManagerFactory,
@@ -127,7 +126,9 @@ class TestStrategy:
         assert trade.strategy
 
     def test_empty_strategy_uses_market_default(self):
-        trade = TradeFactory(strategy=None)
+        market = MarketFactory()
+
+        trade = TradeFactory(strategy=None, trade_manager=market.trade_manager)
         assert trade.strategy == trade.trade_manager.market.strategies[0]
 
     def test_empty_stratregy(self):

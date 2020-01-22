@@ -27,7 +27,7 @@ class RandomStrategy(Strategy):
         if r == 0:
             logger.info('open trade from random strategy')
             self.open_trade(
-                epic=tick.epic.code,
+                epic=tick.epic.ref,
                 quantity=1,
                 direction=choice([-1, 1]),
                 stop_relative=5,

@@ -4,9 +4,9 @@ from datetime import datetime, timedelta
 import arrow
 from sqlalchemy import func
 
-from estrade.classes.exceptions import AProviderException
-from estrade.classes.abstract.Aprovider import AProvider
-from samples.providers.database.models import Tick
+from estrade.exceptions import AProviderException
+from estrade.abstract.Aprovider import AProvider
+from samples.providers.database.models.tick import Tick
 
 
 logger = logging.getLogger(__name__)
@@ -62,21 +62,21 @@ class DBProvider(AProvider):
         This function generate ticks from your DB
         :return:
         """
-        logger.info('Run backtest for epics %s' % [e.code for e in self.market.epics])
+        logger.info('Run backtest for epics %s' % [e.ref for e in self.market.epics])
 
         for trading_date in self.backtest_dates_generator:
             logger.info('Run backtest for %s' % trading_date.strftime('%Y-%m-%d'))
-            logger.info('find ticks for date %s and epics %s' % (trading_date.strftime('%Y-%m-%d'), [e.code for e in self.market.epics]))
+            logger.info('find ticks for date %s and epics %s' % (trading_date.strftime('%Y-%m-%d'), [e.ref for e in self.market.epics]))
             ticks = Tick.query.filter(
                 func.date(Tick.datetime) == trading_date,
-                Tick.epic.in_([e.code for e in self.market.epics]),
+                Tick.epic.in_([e.ref for e in self.market.epics]),
                 ).order_by(Tick.datetime)
 
             logger.info('Nb ticks found for this date %d' % ticks.count())
 
             for tick in ticks:
                 self.on_new_tick(
-                    epic_code=tick.epic,
+                    epic_ref=tick.epic,
                     bid=tick.bid,
                     ask=tick.ask,
                     datetime=arrow.get(tick.datetime).replace(tzinfo='UTC')

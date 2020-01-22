@@ -1,9 +1,9 @@
 import pytest
 from datetime import datetime
 
-from estrade.classes.abstract.Aprovider import ALiveProvider, AProvider
-from estrade.classes.trade import Trade
-from estrade.classes.exceptions import AProviderException
+from estrade.abstract.Aprovider import ALiveProvider, AProvider
+from estrade.trade import Trade
+from estrade.exceptions import AProviderException
 
 
 class TestProvider:

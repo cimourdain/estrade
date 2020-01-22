@@ -1,19 +1,18 @@
-import uuid
 from datetime import datetime
 
 import arrow
 import factory
 from faker import Faker
 
-from estrade.classes.abstract.Acandle_set_indicator import AbstractCandleSetIndicator
-from estrade.classes.candle import Candle
-from estrade.classes.stop_limit import StopLimitAbsolute, StopLimitRelative
-from estrade.classes.trade import Trade
-from estrade.classes.trade_manager import TradeManager
+from estrade.abstract.Acandle_set_indicator import AbstractCandleSetIndicator
+from estrade.candle import Candle
+from estrade.stop_limit import StopLimitAbsolute, StopLimitRelative
+from estrade.trade import Trade
+from estrade.trade_manager import TradeManager
 from estrade import CandleSet
-from estrade import Epic
+from estrade.epic import Epic
 from estrade import Market
-from estrade import ALiveProvider, AProvider
+from estrade.abstract.Aprovider import ALiveProvider, AProvider
 from estrade import AReporting
 from estrade import Strategy
 from estrade import Tick
@@ -143,7 +142,7 @@ class TradeFactory(factory.Factory):
     class Meta:
         model = Trade
 
-    trade_manager = TradeManagerFactory()
+    trade_manager = None
     strategy = StrategyFactory()
     tick = TickFactory()
     quantity = 1

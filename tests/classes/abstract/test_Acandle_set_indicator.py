@@ -1,6 +1,6 @@
 import pytest
 
-from estrade.classes.abstract.Acandle_set_indicator import AbstractCandleSetIndicator
+from estrade.abstract.Acandle_set_indicator import AbstractCandleSetIndicator
 
 
 class TestAbstractCandleSetIndicator:

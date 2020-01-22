@@ -1,21 +1,21 @@
 import logging
 
-from estrade.classes.abstract.Aref_class import ARefClass
-from estrade.classes.abstract.Amarket_class import AMarketOptionalClass
-from estrade.classes.epic import Epic
-from estrade.classes.exceptions import StrategyException
+from estrade.ref_mixin import RefMixin
+from estrade.market_mixin import MarketOptionalMixin
+from estrade.epic import Epic
+from estrade.exceptions import StrategyException
 
 logger = logging.getLogger(__name__)
 
 
-class Strategy(AMarketOptionalClass, ARefClass):
+class Strategy(MarketOptionalMixin, RefMixin):
     """
     This class define comportment of a trading bot strategy.
     """
     def __init__(self, epics, params=None, ref=None, max_concurrent_trades=1):
         """
         Init a new strategy
-        :param epics: [<estrade.classes.epics.Epic>,]
+        :param epics: [<estrade.epics.Epic>,]
         :param params: <dict> (only to use in strategy execution method)
         :param ref: <str> strategy name
         :param max_concurrent_trades: <int> nb max of trades concurrently opened
@@ -23,10 +23,10 @@ class Strategy(AMarketOptionalClass, ARefClass):
         """
         logger.info('Init new strategy creation')
         # init class ref attribute
-        ARefClass.__init__(self, ref)
+        RefMixin.__init__(self, ref)
 
         # set market to None on init (will be set when strategy is attached to Market instance)
-        AMarketOptionalClass.__init__(self, None)
+        MarketOptionalMixin.__init__(self, None)
 
         self.epics = epics
         self.params = params
@@ -42,7 +42,7 @@ class Strategy(AMarketOptionalClass, ARefClass):
     def epics(self):
         """
         Returns instance epics
-        :return: [<estrade.classes.epic.Epic>,]
+        :return: [<estrade.epic.Epic>,]
         """
         return self._epics
 
@@ -50,7 +50,7 @@ class Strategy(AMarketOptionalClass, ARefClass):
     def epics(self, epics):
         """
         Set instance epics
-        :param epics: [<estrade.classes.epic.Epic>,] or None
+        :param epics: [<estrade.epic.Epic>,] or None
         :return:
         """
         self._epics = []
@@ -109,7 +109,7 @@ class Strategy(AMarketOptionalClass, ARefClass):
         """
         Helper method to find epic in strategies epic from ref
         :param epic_ref: <str>
-        :return: <estrade.classes.epic.Epic> if found else <estrade.classes.exceptions.StrategyException>
+        :return: <estrade.epic.Epic> if found else <estrade.exceptions.StrategyException>
         """
         for epic in self.epics:
             if epic.ref == epic_ref:
@@ -121,7 +121,7 @@ class Strategy(AMarketOptionalClass, ARefClass):
         Helper to fetch a candle set from epic_ref and timeframe
         :param epic_ref: <str> (matching an epic in self.epics)
         :param timeframe: <str> (matching a candleset.timeframe in epic)
-        :return: <estrade.classes.candle_set.CandleSet> instance
+        :return: <estrade.candle_set.CandleSet> instance
         """
         return self.get_epic(epic_ref).get_candle_set(timeframe)
 
@@ -131,7 +131,7 @@ class Strategy(AMarketOptionalClass, ARefClass):
         :param epic_ref: <str> (matching an epic ref in self.epics)
         :param timeframe: <str> (matching an candle set timeframe in the above epic)
         :param offset: <int> nb of candles backward from the last candle in candle set found
-        :return: <estrade.classes.candle.Candle> instance or None if not found
+        :return: <estrade.candle.Candle> instance or None if not found
         """
         offset = abs(offset) + 1
         cs = self.get_candle_set(epic_ref, timeframe)
@@ -146,7 +146,7 @@ class Strategy(AMarketOptionalClass, ARefClass):
         :param timeframe: <str> (matching an candle set timeframe in the above epic)
         :param indicator_name:
         :param offset: <int> nb of candles backward from the last candle in candle set found
-        :return: <estrade.classes.Acandle_set_indicator.ACandleSetIndicator> child instance
+        :return: <estrade.Acandle_set_indicator.ACandleSetIndicator> child instance
         """
         candle = self.get_candle(epic_ref, timeframe, offset)
         if not candle:
@@ -162,7 +162,7 @@ class Strategy(AMarketOptionalClass, ARefClass):
     def open_trade(self, **kwargs):
         """
         Helper to add strategy on open trade
-        :param kwargs: args to open a trade (see <estrade.classes.trade_manager.TradeManager.open_trade>)
+        :param kwargs: args to open a trade (see <estrade.trade_manager.TradeManager.open_trade>)
         :return:
         """
         self.market.trade_manager.open_trade(strategy=self, **kwargs)
@@ -170,7 +170,7 @@ class Strategy(AMarketOptionalClass, ARefClass):
     def close_trade_by_ref(self, *args, **kwargs):
         """
         Helper to add strategy in close trade call
-        :param args/kwargs: args to close a trade (see <estrade.classes.trade_manager.TradeManager.close_trade_by_ref>)
+        :param args/kwargs: args to close a trade (see <estrade.trade_manager.TradeManager.close_trade_by_ref>)
         :return:
         """
         self.market.trade_manager.close_trade_by_ref(*args, strategy=self, **kwargs)
@@ -178,7 +178,7 @@ class Strategy(AMarketOptionalClass, ARefClass):
     def close_all_trades(self, *args, **kwargs):
         """
         Helper to add strategy on close all trade call
-        :param args/kwargs: args to close all trade (see <estrade.classes.trade_manager.TradeManager.close_all_trades>)
+        :param args/kwargs: args to close all trade (see <estrade.trade_manager.TradeManager.close_all_trades>)
         :return:
         """
         self.market.trade_manager.close_all_trades(*args, strategy=self, **kwargs)
@@ -186,7 +186,7 @@ class Strategy(AMarketOptionalClass, ARefClass):
     def close_all_buys(self, *args, **kwargs):
         """
         Helper to close all buys for the current strategy
-        :param args/kwargs: args close all buys (see <estrade.classes.trade_manager.TradeManager.close_all_buys>)
+        :param args/kwargs: args close all buys (see <estrade.trade_manager.TradeManager.close_all_buys>)
         :return:
         """
         self.market.trade_manager.close_all_buys(*args, strategy=self, **kwargs)
@@ -194,7 +194,7 @@ class Strategy(AMarketOptionalClass, ARefClass):
     def close_all_sells(self, *args, **kwargs):
         """
         Helper to close all sells for the current strategy
-        :param args/kwargs: args close all sells (see <estrade.classes.trade_manager.TradeManager.close_all_sells>)
+        :param args/kwargs: args close all sells (see <estrade.trade_manager.TradeManager.close_all_sells>)
         :return:
         """
         self.market.trade_manager.close_all_sells(*args, strategy=self, **kwargs)
@@ -235,7 +235,7 @@ class Strategy(AMarketOptionalClass, ARefClass):
         if any epic candleset create a new candle for this tick.
         The `on_new_candle` method of this instance will be called BEFORE this method.
 
-        :param tick: <estrade.classes.tick.Tick>
+        :param tick: <estrade.tick.Tick>
         :return:
         """
         if not self.market:
@@ -245,11 +245,15 @@ class Strategy(AMarketOptionalClass, ARefClass):
 
         logger.debug('check if any trade has to be open/closed on new tick')
         if not self.check_tick_time(tick):
-            if self.market.trade_manager.strategy_trades[self.ref]['opened']:
-                logger.info('out of trading period > close %d trades' % len(
-                    self.market.trade_manager.strategy_trades[self.ref]['opened']
+            if len(self.market.trade_manager.strategy_trades[self.ref]['opened']) > 0:
+                logger.info('%s out of trading period > close %s' % (
+                    tick.datetime,
+                    self.market.trade_manager.strategy_trades[self.ref]['opened'][0]
                 ))
                 self.close_all_trades(close_reason='out of trading period for strategy {}'.format(self.ref))
+
+                if len(self.market.trade_manager.strategy_trades[self.ref]['opened']) > 0:
+                    exit()
             # close all trades
             return
 
@@ -276,36 +280,46 @@ class Strategy(AMarketOptionalClass, ARefClass):
     ##################################################
     def check_tick_time(self, tick):
         """
-        Check if tick datetime is valid
-        :return: <bool> True if valid else False
+        This method is executed on every tick and allow to restrict the date/time where the strategy applies.
+        If this method return False, no opening strategy will be applied.
+
+        Notes:
+            - tick.datetime is an Arrow instance (see arrow lib: https://arrow.readthedocs.io)
+            - if this method is not defined, it will always return True (no date/time restriction)
+
+        :param estrade.Tick Tick: tick instances
+        :return: bool
         """
         return True
 
     def on_new_tick_opening_strategy(self, tick):
         """
-        method called to apply opening strategy for each tick where opening trade is allowed (see on_new_tick)
-        :param tick: <estrade.classes.tick.Tick> instance
+        This method is called on every tick received from provider
+
+        :param tick: :class:`estrade.tick.Tick` instance
+        :return : None
+
         """
         pass
 
     def on_new_tick_closing_strategy(self, tick):
         """
         method called to apply opening strategy for each tick where closing trade is allowed (see on_new_tick)
-        :param tick: <estrade.classes.tick.Tick> instance
+        :param tick: <estrade.tick.Tick> instance
         """
         pass
 
     def on_new_candle_opening_strategy(self, candle_set):
         """
         method called every time a new candle is created
-        :param candle_set: <estrade.classes.candle_set.CandleSet> instance
+        :param candle_set: <estrade.candle_set.CandleSet> instance
         """
         pass
 
     def on_new_candle_closing_strategy(self, candle_set):
         """
         method called every time a new candle is created
-        :param candle_set: <estrade.classes.candle_set.CandleSet> instance
+        :param candle_set: <estrade.candle_set.CandleSet> instance
         """
         pass
 
