@@ -66,8 +66,38 @@ class AProvider(MarketOptionalMixin, ATradeClassUser):
         """
         This method must be implemented to fetch ticks or candles from provider.
 
-        If your provider generates ticks: this method must call `self.market.on_new_tick(tick)` method.
-        If your provider gererates candles: this method must call `self.market.on_new_candle(candle)` method.
+        Tick mode:
+            If your provider generates ticks: this method must :
+                1. Build a :class:`estrade.Tick` calling :func:`~estrade.abstract.Aprovider.AProvider.build_tick` method.
+                2. Send the tick to market calling :func:`estrade.market.Market.on_new_tick` method
+
+            eg::
+
+                from estrade import AProvider
+                from random import randint
+
+                class MyProvider(AProvider):
+                    SPREAD = 1
+
+                    def generate():
+                        for _ in range(100):
+                            # generate a random value
+                            random_value = randint(1000, 2000)
+
+                            # build a Tick instance
+                            tick = self.build_tick(
+                                epic_ref='MY_EPIC_CODE',
+                                datetime=datetime.now(),
+                                bid=random_value + (SPREAD / 2),
+                                ask=random_value - (SPREAD / 2),
+                                my_param='test', # extra values are stored in tick meta
+                            )
+
+                            # send tick to market
+                            self.market.on_new_tick(tick)
+
+        Candle mode:
+            If your provider generates candles: this method must call `self.market.on_new_candle(candle)` method.
 
         :return:
 

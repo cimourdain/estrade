@@ -289,7 +289,7 @@ class Strategy(MarketOptionalMixin, RefMixin):
             - tick.datetime is an Arrow instance (see arrow lib: https://arrow.readthedocs.io)
             - if this method is not defined, it will always return True (no date/time restriction)
 
-        :param estrade.Tick Tick: tick instances
+        :param estrade.Tick tick: tick instance
         :return: bool
         """
         return True
@@ -298,30 +298,35 @@ class Strategy(MarketOptionalMixin, RefMixin):
         """
         This method is called on every tick received from provider
 
-        :param tick: :class:`estrade.tick.Tick` instance
-        :return : None
-
+        :param estrade.Tick tick: tick instance
+        :return: None
         """
         pass
 
     def on_new_tick_closing_strategy(self, tick):
         """
         method called to apply opening strategy for each tick where closing trade is allowed (see on_new_tick)
-        :param tick: <estrade.tick.Tick> instance
+
+        :param estrade.Tick tick: tick instance
+        :return: None
         """
         pass
 
     def on_new_candle_opening_strategy(self, candle_set):
         """
         method called every time a new candle is created
-        :param candle_set: <estrade.candle_set.CandleSet> instance
+
+        :param estrade.CandleSet candle_set: candle set instance
+        :return: None
         """
         pass
 
     def on_new_candle_closing_strategy(self, candle_set):
         """
         method called every time a new candle is created
-        :param candle_set: <estrade.candle_set.CandleSet> instance
+
+        :param estrade.CandleSet candle_set: candle set instance
+        :return: None
         """
         pass
 
