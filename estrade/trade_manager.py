@@ -1,21 +1,21 @@
 import logging
 
-from estrade.classes.abstract.Amarket_class import AMarketMandatoryClass
-from estrade.classes.abstract.Atrade_class import ATradeClassUser
-from estrade.classes.exceptions import TradeManagerException
-from estrade.classes.observer import Observable
+from estrade.market_mixin import MarketMandatoryMixin
+from estrade.abstract.Atrade_class import ATradeClassUser
+from estrade.exceptions import TradeManagerException
+from estrade.observer import Observable
 
 logger = logging.getLogger(__name__)
 
 
-class TradeManager(AMarketMandatoryClass, ATradeClassUser, Observable):
+class TradeManager(MarketMandatoryMixin, ATradeClassUser, Observable):
     """
     A trade manager handle a list of trades.
     """
     def __init__(self, market=None, trades=None):
         """
         Init a new trade manager
-        :param market: <estrade.classes.market.Market> instance
+        :param market: <estrade.market.Market> instance
         :param trades: [<self.trade_class>,]
         """
         # init list of trades
@@ -25,9 +25,9 @@ class TradeManager(AMarketMandatoryClass, ATradeClassUser, Observable):
         self.strategy_trades = {}
 
         # init market
-        AMarketMandatoryClass.__init__(self, market)
+        MarketMandatoryMixin.__init__(self, market)
 
-        # init trade_manager with the default trade class <estrade.classes.trade.Trade>
+        # init trade_manager with the default trade class <estrade.trade.Trade>
         ATradeClassUser.__init__(self, trade_class=None)
 
         # set trade manager as observable so it can fire events
@@ -144,10 +144,10 @@ class TradeManager(AMarketMandatoryClass, ATradeClassUser, Observable):
     def on_new_tick(self, tick):
         """
         On new tick, dispatch tick to all opened trades
-        :param tick: <estrade.classes.tick.Tick>
+        :param tick: <estrade.tick.Tick>
         :return:
         """
-        from estrade.classes.tick import Tick
+        from estrade.tick import Tick
         if not isinstance(tick, Tick):
             raise TradeManagerException('Invalid tick received')
 
@@ -168,7 +168,7 @@ class TradeManager(AMarketMandatoryClass, ATradeClassUser, Observable):
 
         return trade
 
-    def _close_trade(self, trade, quantity=None, close_reason='close unique trade', tick=None):
+    def close_trade(self, trade, quantity=None, close_reason='close unique trade', tick=None):
         """
         method to close a trade.
 
@@ -179,7 +179,7 @@ class TradeManager(AMarketMandatoryClass, ATradeClassUser, Observable):
         :param trade: <self.trade_class> instance
         :param quantity: <int> quantity to close on trade
         :param close_reason: <str> closing reason
-        :param tick: <estrade.classes.tick.Tick> instance : tick to use for trade close
+        :param tick: <estrade.tick.Tick> instance : tick to use for trade close
         :return:
         """
         logger.info('close unique trade %s', trade)
@@ -210,13 +210,13 @@ class TradeManager(AMarketMandatoryClass, ATradeClassUser, Observable):
         :param ref: <str> ref of a trade in self.trades
         :param close_reason: <str>
         :param quantity: <int> quantity to close
-        :param strategy: <estrade.classes.strategy.Strategy> strategy to restrict search for trade on
-        :param tick: <estrade.classes.tick.Tick> instance : tick to use for trade close
+        :param strategy: <estrade.strategy.Strategy> strategy to restrict search for trade on
+        :param tick: <estrade.tick.Tick> instance : tick to use for trade close
         :return:
         """
         for trade in reversed(self.get_trades(only_opened=True, strategy=strategy)):
             if not trade.closed and trade.ref == ref and (not strategy or trade.strategy == strategy):
-                self._close_trade(trade, quantity=quantity, close_reason=close_reason, tick=tick)
+                self.close_trade(trade, quantity=quantity, close_reason=close_reason, tick=tick)
                 return
         raise TradeManagerException(
             'impossible to find trade to close with ref {} in {}'.format(
@@ -229,38 +229,46 @@ class TradeManager(AMarketMandatoryClass, ATradeClassUser, Observable):
         """
         Close all open trades (for a specific strategy if prrovided)
         :param close_reason: <str>
-        :param strategy: <estrade.classes.strategy.Strategy> child instance
-        :param tick: <estrade.classes.tick.Tick> instance : tick to use for trade close
+        :param strategy: <estrade.strategy.Strategy> child instance
+        :param tick: <estrade.tick.Tick> instance : tick to use for trade close
         :return:
         """
-        logger.debug('close all trades')
-        for trade in reversed(self.trades):
-            if not trade.closed and (not strategy or trade.strategy == strategy):
-                self._close_trade(trade, close_reason=close_reason, tick=tick)
+        logger.info('close all (%d) trades for strategy %s' % (
+            len(self.open_trades),
+            strategy.ref if strategy else None
+        ))
+        for trade in self.open_trades[:]:
+            if not strategy or trade.strategy == strategy:
+                self.close_trade(trade, close_reason=close_reason, tick=tick)
+                logger.debug('after close trade %s' % trade)
+            else:
+                logger.debug('do not close trade %s' % trade)
+
+        logger.debug('%d trades remaining in open_trades' % len(self.open_trades))
 
     def close_all_buys(self, close_reason='close all buys', strategy=None, tick=None):
         """
         Close all opened buy trades (for a specific strategy if provided)
         :param close_reason: <str>
-        :param strategy: <estrade.classes.strategy.Strategy> child instance
-        :param tick: <estrade.classes.tick.Tick> instance : tick to use for trade close
+        :param strategy: <estrade.strategy.Strategy> child instance
+        :param tick: <estrade.tick.Tick> instance : tick to use for trade close
         :return:
         """
-        for trade in reversed(self.trades):
+        for trade in self.open_trades[:]:
             if not trade.closed and trade.direction > 0 and (not strategy or trade.strategy == strategy):
-                self._close_trade(trade, close_reason=close_reason, tick=tick)
+                self.close_trade(trade, close_reason=close_reason, tick=tick)
 
     def close_all_sells(self, close_reason='close all sells', strategy=None, tick=None):
         """
         Close all opened sell trades (for a specific strategy if provided)
         :param close_reason: <str>
-        :param strategy: <estrade.classes.strategy.Strategy> child instance
-        :param tick: <estrade.classes.tick.Tick> instance : tick to use for trade close
+        :param strategy: <estrade.strategy.Strategy> child instance
+        :param tick: <estrade.tick.Tick> instance : tick to use for trade close
         :return:
         """
-        for trade in reversed(self.trades):
+        for trade in self.open_trades[:]:
             if not trade.closed and trade.direction < 0 and (not strategy or trade.strategy == strategy):
-                self._close_trade(trade, close_reason=close_reason, tick=tick)
+                self.close_trade(trade, close_reason=close_reason, tick=tick)
 
     ##################################################
     # STATS
@@ -270,7 +278,7 @@ class TradeManager(AMarketMandatoryClass, ATradeClassUser, Observable):
         get a list of trade based on search input params
         :param only_opened: <bool> only return opened trades
         :param only_closed: <bool> only return closed trades
-        :param strategy: <estrade.classes.strategy.Strategy> child instance
+        :param strategy: <estrade.strategy.Strategy> child instance
         :return: [<self.trade_class>,]
         """
         if strategy:

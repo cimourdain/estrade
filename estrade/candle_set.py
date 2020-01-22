@@ -4,10 +4,10 @@ import logging
 import re
 from datetime import timedelta
 
-from estrade.classes.abstract.Acandle_set_indicator import AbstractCandleSetIndicator
-from estrade.classes.candle import Candle
-from estrade.classes.exceptions import CandleSetException
-from estrade.classes.observer import Observable
+from estrade.abstract.Acandle_set_indicator import AbstractCandleSetIndicator
+from estrade.candle import Candle
+from estrade.exceptions import CandleSetException
+from estrade.observer import Observable
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ ALLOWED_UT = [
 
 class CandleSet(Observable):
     """
-    A CandleSet create candles, add ticks and close a list of Candles<estrade.classes.candle.Candle>
+    A CandleSet create candles, add ticks and close a list of Candles<estrade.candle.Candle>
     based on its timeframe.
 
     CandleSet receive ticks via its on_new_tick method :
@@ -42,7 +42,7 @@ class CandleSet(Observable):
                 - timeframe is splitted between (see timeframe setter)
                     - "ut" (time unit, eg. ticks, minutes, hours etc.)
                     - "nb" (nb of time unit)
-        :param indicators: [children of <estrade.classes.Acandleset_indicators.AbstractCandleSetIndicators>]
+        :param indicators: [children of <estrade.Acandleset_indicators.AbstractCandleSetIndicators>]
         :param max_candles_in_memory: <int> defines the number of candles kept in memory by candleSet.
             - note: the bigger the number of candles, the slower your program will be
             - warning: keep this number high enough for your indicators using candle to work properly (eg. if you use
@@ -56,7 +56,7 @@ class CandleSet(Observable):
         Observable.__init__(self)
 
         # epic is null on init
-        # epic is set when CandleSet is set in candlesets of an <estrade.classes.epic.Epic> instance
+        # epic is set when CandleSet is set in candlesets of an <estrade.epic.Epic> instance
         self.epic = None
 
         # ut and nb are set by timeframe setter
@@ -93,7 +93,7 @@ class CandleSet(Observable):
     def epic(self):
         """
         Return candle set epic
-        :return: <estrade.classes.epic.Epic> instance
+        :return: <estrade.epic.Epic> instance
         """
         return self._epic
 
@@ -101,11 +101,11 @@ class CandleSet(Observable):
     def epic(self, epic):
         """
         Set candle set Epic
-        :param epic: <estrade.classes.epic.Epic> instance or None
+        :param epic: <estrade.epic.Epic> instance or None
         :return:
         """
         # import Epic here to prevent ImportError
-        from estrade.classes.epic import Epic
+        from estrade.epic import Epic
         if getattr(self, '_epic', None) and isinstance(self._epic, Epic) and self._epic != epic:
             raise CandleSetException('Cannot CandleSet %s to epic %s, as it was already assigned to epic %s' % (
                 self.timeframe,
@@ -232,7 +232,7 @@ class CandleSet(Observable):
     def indicators(self):
         """
         Return list of indicators
-        :return: [childen of <estrade.classes.candleset_indicators.Acandle_set_indicator.AbstractCandleSetIndicator>]
+        :return: [childen of <estrade.candleset_indicators.Acandle_set_indicator.AbstractCandleSetIndicator>]
         """
         return self._indicators
 
@@ -240,7 +240,7 @@ class CandleSet(Observable):
     def indicators(self, indicators):
         """
         Set candle set indicators.
-        :param indicators: [<estrade.classes.candleset_indicators.Acandle_set_indicator.AbstractCandleSetIndicator>]
+        :param indicators: [<estrade.candleset_indicators.Acandle_set_indicator.AbstractCandleSetIndicator>]
         :return:
         """
         self._indicators = []
@@ -252,7 +252,7 @@ class CandleSet(Observable):
             for indicator in indicators:
                 if not isinstance(indicator, AbstractCandleSetIndicator):
                     raise CandleSetException('Indicators must be instances of '
-                                             'estrade.classes.Acandle_set_indicator.AbstractCandleSetIndicator')
+                                             'estrade.Acandle_set_indicator.AbstractCandleSetIndicator')
                 logger.debug('add indicator %s' % indicator.name)
                 indicator.candle_set = self
                 self._indicators.append(indicator)
@@ -275,7 +275,7 @@ class CandleSet(Observable):
     def current_candle(self):
         """
         return current candle. The current candle is the last candle in instance candles.
-        :return: None if no candles in instance, else instance of <estrade.classes.candle.Candle>
+        :return: None if no candles in instance, else instance of <estrade.candle.Candle>
         """
         return self.candles[-1] if self.candles else None
 
@@ -283,7 +283,7 @@ class CandleSet(Observable):
     def last_closed_candle(self):
         """
         return the last closed candle. The earlier closed candle in instance candles.
-        :return: None if no candle closed, else instance of <estrade.classes.candle.Candle>
+        :return: None if no candle closed, else instance of <estrade.candle.Candle>
         """
         for c in reversed(self.candles):
             if c.closed:
@@ -381,7 +381,7 @@ class CandleSet(Observable):
         This method create a new candle from an tick and add it to the instance list of candles.
         This method fire candle opening events.
 
-        :param tick: instance of <estrade.classes.tick.Tick>
+        :param tick: instance of <estrade.tick.Tick>
         :return:
         """
         self.candles.append(Candle(
@@ -430,7 +430,7 @@ class CandleSet(Observable):
     def close_last_candle(self, tick):
         """
         This method close the current candle.
-        :param tick: <estrade.classes.tick.Tick>
+        :param tick: <estrade.tick.Tick>
         :return:
         """
         if self.candles:
@@ -444,7 +444,7 @@ class CandleSet(Observable):
         This method is the entry point called on every new tick.
             - update candles (close and open candles if required or add tick to current candle)
             - send events (to update indicators, call strategies candle events etc.)
-        :param tick: <estrade.classes.tick.Tick>
+        :param tick: <estrade.tick.Tick>
         :return: <bool>
         """
         logger.debug('%s : add tick in candle set: %s' % (self.timeframe, tick))

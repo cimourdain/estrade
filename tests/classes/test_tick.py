@@ -3,7 +3,7 @@ import pytest
 from datetime import datetime
 from dateutil import tz
 
-from estrade.classes.exceptions import TickException
+from estrade.exceptions import TickException
 from tests.factories import EpicFactory, TickFactory
 
 

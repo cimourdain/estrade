@@ -4,12 +4,12 @@ Eg. market, ref
 
 import logging
 
-from estrade.classes.abstract import get_exception
+from estrade.abstract import get_exception
 
 logger = logging.getLogger(__name__)
 
 
-class AMarketClass:
+class MarketMixin:
     """
     Abstract class to use as parent of classes having a market attribute
     """
@@ -19,7 +19,7 @@ class AMarketClass:
     def _pre_set_market(self, market):
         """
         Method called before setting market as attribute
-        :param market: <estrade.classes.market.Market>
+        :param market: <estrade.market.Market>
         :return: <bool>
         """
         return True
@@ -39,7 +39,7 @@ class AMarketClass:
     def market(self, market):
         """
         Method to set market on class
-        :param market: <estrade.classes.market.Market>
+        :param market: <estrade.market.Market>
         :return:
         """
 
@@ -49,9 +49,9 @@ class AMarketClass:
 
         logger.debug('Set market on %s instance' % self.__class__.__name__)
 
-        # check that market is instance of estrade.classes.market.Market
+        # check that market is instance of estrade.market.Market
         # import Market here to prevent import loop
-        from estrade.classes.market import Market
+        from estrade.market import Market
         if not market or not isinstance(market, Market):
             raise get_exception(self)('impossible to add market to {}'.format(self.__class__.__name__))
 
@@ -61,14 +61,14 @@ class AMarketClass:
         self._post_set_market()
 
 
-class AMarketOptionalClass(AMarketClass):
+class MarketOptionalMixin(MarketMixin):
     """
     Abstract class to set as parent of classes where market is optional
     """
     def _pre_set_market(self, market):
         """
         Allow to set market as None
-        :param market: None or <estrade.classes.market.Market>
+        :param market: None or <estrade.market.Market>
         :return: <bool>
         """
         if market is None:
@@ -77,7 +77,7 @@ class AMarketOptionalClass(AMarketClass):
         return True
 
 
-class AMarketMandatoryClass(AMarketClass):
+class MarketMandatoryMixin(MarketMixin):
     """
     Abstract class to use as parent of classes where market is mandatory
     """

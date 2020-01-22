@@ -1,6 +1,6 @@
 import logging
 
-from estrade.classes.exceptions import StopLimitException
+from estrade.exceptions import StopLimitException
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +11,7 @@ class AStopLimit:
         """
         Init new stop/limit
         :param type_: <str> in ['STOP', 'LIMIT']
-        :param trade: <estrade.classes.trade.Trade> instance
+        :param trade: <estrade.trade.Trade> instance
         :param value: <int>
         """
         self.type_ = type_
@@ -26,7 +26,7 @@ class AStopLimit:
     def trade(self):
         """
         return trade
-        :return: <estrade.classes.trade.Trade> instance
+        :return: <estrade.trade.Trade> instance
         """
         return self._trade
 
@@ -34,10 +34,10 @@ class AStopLimit:
     def trade(self, trade):
         """
         Set trade
-        :param trade: <estrade.classes.trade.Trade> instance
+        :param trade: <estrade.trade.Trade> instance
         :return:
         """
-        from estrade.classes.trade import Trade
+        from estrade.trade import Trade
         if not isinstance(trade, Trade):
             raise StopLimitException('Invalid Trade on Stop/Limit')
         self._trade = trade
@@ -154,7 +154,7 @@ class AStopLimit:
         Check stop/limit value against a tick:
             - returns True if stop/limit reached
             - returns False if stop/limit not reached
-        :param tick: <estrade.classes.tick.Tick> instance
+        :param tick: <estrade.tick.Tick> instance
         :return: <bool>
         """
         if self.type_ == 'STOP':

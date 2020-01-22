@@ -1,9 +1,7 @@
-from datetime import datetime
-
 import arrow
 import pytest
 
-from estrade.classes.exceptions import EpicException, StrategyException
+from estrade.exceptions import EpicException, StrategyException
 from tests.factories import (
     CandleSetFactory,
     EpicFactory,
@@ -268,7 +266,7 @@ class TestStrategyOnNewCandle:
 class TestOpenTrades:
 
     def test_open_trade(self, mocker):
-        open_trade_mocker = mocker.patch('estrade.classes.trade_manager.TradeManager.open_trade')
+        open_trade_mocker = mocker.patch('estrade.trade_manager.TradeManager.open_trade')
 
         strategy = StrategyFactory(epics=None)
         market = MarketFactory()
@@ -287,7 +285,7 @@ class TestOpenTrades:
 class TestCloseTrades:
 
     def test_close_trade(self, mocker):
-        close_trade_mocker = mocker.patch('estrade.classes.trade_manager.TradeManager.close_trade_by_ref')
+        close_trade_mocker = mocker.patch('estrade.trade_manager.TradeManager.close_trade_by_ref')
 
         strategy = StrategyFactory(epics=None)
         MarketFactory(strategies=[strategy])
@@ -311,7 +309,7 @@ class TestCloseTrades:
         close_trade_mocker.assert_called_with(**close_params)
 
     def test_close_all_trades(self, mocker):
-        close_trade_mocker = mocker.patch('estrade.classes.trade_manager.TradeManager.close_all_trades')
+        close_trade_mocker = mocker.patch('estrade.trade_manager.TradeManager.close_all_trades')
 
         strategy = StrategyFactory(epics=None)
         MarketFactory(strategies=[strategy])
@@ -331,7 +329,7 @@ class TestCloseTrades:
         close_trade_mocker.assert_called_with(**close_params)
 
     def test_close_all_buys(self, mocker):
-        close_trade_mocker = mocker.patch('estrade.classes.trade_manager.TradeManager.close_all_buys')
+        close_trade_mocker = mocker.patch('estrade.trade_manager.TradeManager.close_all_buys')
 
         strategy = StrategyFactory(epics=None)
         MarketFactory(strategies=[strategy])
@@ -351,7 +349,7 @@ class TestCloseTrades:
         close_trade_mocker.assert_called_with(**close_params)
 
     def test_close_all_sells(self, mocker):
-        close_trade_mocker = mocker.patch('estrade.classes.trade_manager.TradeManager.close_all_sells')
+        close_trade_mocker = mocker.patch('estrade.trade_manager.TradeManager.close_all_sells')
 
         strategy = StrategyFactory(epics=None)
         MarketFactory(strategies=[strategy])
@@ -374,30 +372,31 @@ class TestCloseTrades:
 class TestMaxConcurrentTrades:
 
     def test_base(self, mocker):
-        strategy = StrategyFactory(max_concurrent_trades=2)
+        market = MarketFactory()
+        strategy = market.strategies[0]
+        strategy.max_concurrent_trades = 2
         opening_strategy_mocker = mocker.spy(strategy, 'on_new_tick_opening_strategy')
         closing_strategy_mocker = mocker.spy(strategy, 'on_new_tick_closing_strategy')
-        MarketFactory(strategies=[strategy])
 
-        tick = TickFactory()
-        strategy.on_new_tick(tick)
+        tick = TickFactory(epic=market.epics[0])
+        market.on_new_tick(tick)
         assert opening_strategy_mocker.call_count == 1
         # closing strategy not called because no trade is open
         assert not closing_strategy_mocker.called
 
-        strategy.open_trade(quantity=-5, tick=tick, direction='BUY')
+        strategy.open_trade(quantity=5, epic=strategy.epics[0].ref, direction='BUY')
         assert strategy.market.trade_manager.nb_trades(strategy=strategy) == 1
 
-        tick = TickFactory()
-        strategy.on_new_tick(tick)
+        tick = TickFactory(epic=market.epics[0])
+        market.on_new_tick(tick)
         assert closing_strategy_mocker.call_count == 1
         assert opening_strategy_mocker.call_count == 2
 
-        strategy.open_trade(quantity=-8, tick=tick, direction='BUY')
+        strategy.open_trade(quantity=8, epic=strategy.epics[0].ref, direction='SELL')
         assert strategy.market.trade_manager.nb_trades(strategy=strategy) == 2
 
-        tick = TickFactory()
-        strategy.on_new_tick(tick)
+        tick = TickFactory(epic=market.epics[0])
+        market.on_new_tick(tick)
         assert closing_strategy_mocker.call_count == 2
         # opening strategy is not called
         assert opening_strategy_mocker.call_count == 2
@@ -407,26 +406,26 @@ class TestMaxConcurrentTrades:
         assert strategy.market.trade_manager.nb_trades(strategy=strategy, only_opened=True) == 1
         assert strategy.market.trade_manager.nb_trades(strategy=strategy, only_closed=True) == 1
 
-        tick = TickFactory()
-        strategy.on_new_tick(tick)
+        tick = TickFactory(epic=market.epics[0])
+        market.on_new_tick(tick)
         assert closing_strategy_mocker.call_count == 3
         assert opening_strategy_mocker.call_count == 3
 
-        strategy.open_trade(quantity=12, tick=tick, direction='BUY')
+        strategy.open_trade(quantity=12, epic=strategy.epics[0].ref, direction='BUY')
         assert strategy.market.trade_manager.nb_trades(strategy=strategy, only_opened=True) == 2
         assert strategy.market.trade_manager.nb_trades(strategy=strategy, only_closed=True) == 1
 
-        tick = TickFactory()
-        strategy.on_new_tick(tick)
+        tick = TickFactory(epic=market.epics[0])
+        market.on_new_tick(tick)
         assert closing_strategy_mocker.call_count == 4
         assert opening_strategy_mocker.call_count == 3
 
         strategy.close_all_trades()
-        assert strategy.market.trade_manager.nb_trades(strategy=strategy, only_opened=True) == 0
+        assert strategy.market.trade_manager.nb_trades(strategy=strategy, only_opened=True) == 0, strategy.market.trade_manager.strategy_trades[strategy.ref]['opened']
         assert strategy.market.trade_manager.nb_trades(strategy=strategy, only_closed=True) == 3
 
-        tick = TickFactory()
-        strategy.on_new_tick(tick)
+        tick = TickFactory(epic=market.epics[0])
+        market.on_new_tick(tick)
         assert closing_strategy_mocker.call_count == 4
         assert opening_strategy_mocker.call_count == 4
 

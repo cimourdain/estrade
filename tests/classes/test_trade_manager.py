@@ -1,7 +1,7 @@
 import pytest
 
-from estrade.classes.exceptions import TradeManagerException
-from estrade.classes.trade import Trade
+from estrade.exceptions import TradeManagerException
+from estrade.trade import Trade
 from tests.factories import (
     MarketFactory,
     StrategyFactory,
@@ -285,3 +285,38 @@ class TestMaxDD:
         tm.close_trade_by_ref(ref=trade6.ref, tick=tick)
         assert trade6.result == 20
         assert tm.max_drowdown() == 65
+
+
+class TestStrategyTrades:
+
+    def test_base(self):
+        market = MarketFactory()
+        assert len(market.trade_manager.trades) == 0
+        assert len(market.trade_manager.open_trades) == 0
+        assert len(market.trade_manager.closed_trades) == 0
+        assert market.strategies[0].market
+        assert len(market.trade_manager.strategy_trades[market.strategies[0].ref]['opened']) == 0
+        assert len(market.trade_manager.strategy_trades[market.strategies[0].ref]['closed']) == 0
+
+        tick = TickFactory(epic=market.epics[0], bid=1000, ask=1000)
+        market.on_new_tick(tick)
+        market.strategies[0].open_trade(
+            epic=market.epics[0].ref,
+            quantity=1,
+            direction='BUY'
+        )
+        assert len(market.trade_manager.trades) == 1
+        assert len(market.trade_manager.open_trades) == 1
+        assert len(market.trade_manager.closed_trades) == 0
+        assert len(market.trade_manager.strategy_trades[market.strategies[0].ref]['opened']) == 1
+        assert len(market.trade_manager.strategy_trades[market.strategies[0].ref]['closed']) == 0
+
+        tick = TickFactory(epic=market.epics[0], bid=1001, ask=1001)
+        market.on_new_tick(tick)
+        market.trade_manager.close_all_trades()
+        assert len(market.trade_manager.trades) == 1
+        assert len(market.trade_manager.open_trades) == 0
+        assert len(market.trade_manager.closed_trades) == 1
+        assert len(market.trade_manager.strategy_trades[market.strategies[0].ref]['opened']) == 0
+        assert len(market.trade_manager.strategy_trades[market.strategies[0].ref]['closed']) == 1
+        assert market.strategies[0]._apply_opening_strategy()

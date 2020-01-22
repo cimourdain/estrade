@@ -1,4 +1,4 @@
-from estrade.classes.abstract.Acandle_set_indicator import AbstractCandleSetIndicator
+from estrade.abstract.Acandle_set_indicator import AbstractCandleSetIndicator
 import logging
 
 logger = logging.getLogger(__name__)

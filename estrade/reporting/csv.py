@@ -1,6 +1,6 @@
 import logging
 
-from estrade.classes.abstract.Areporting import AReporting
+from estrade.abstract.Areporting import AReporting
 from estrade.utils.csv import CSVWriter
 
 logger = logging.getLogger(__name__)

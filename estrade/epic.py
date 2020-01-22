@@ -2,14 +2,14 @@ import logging
 import pytz
 from dateutil import tz
 
-from estrade.classes.abstract.Amarket_class import AMarketOptionalClass
-from estrade.classes.abstract.Aref_class import ARefClass
-from estrade.classes.exceptions import EpicException
+from estrade.market_mixin import MarketOptionalMixin
+from estrade.ref_mixin import RefMixin
+from estrade.exceptions import EpicException
 
 logger = logging.getLogger(__name__)
 
 
-class Epic(AMarketOptionalClass, ARefClass):
+class Epic(MarketOptionalMixin, RefMixin):
     """
     Class used to define an Epic
     """
@@ -17,10 +17,10 @@ class Epic(AMarketOptionalClass, ARefClass):
         """
         Init an new instance of Epic
         :param ref: <str>
-        :param candle_sets: [<estrade.classes.candle_set.CandleSet>]
+        :param candle_sets: [<estrade.candle_set.CandleSet>]
         :param timezone: pytz timezone
         """
-        ARefClass.__init__(self, ref)
+        RefMixin.__init__(self, ref)
         logger.info('Init new Epic %s' % self.ref)
 
         self.timezone = timezone
@@ -28,7 +28,7 @@ class Epic(AMarketOptionalClass, ARefClass):
         self.strategies = []
 
         # init a market to None
-        AMarketOptionalClass.__init__(self, None)
+        MarketOptionalMixin.__init__(self, None)
         self.candle_sets = candle_sets
         self.tradeable = True
         self.meta = {}
@@ -65,7 +65,7 @@ class Epic(AMarketOptionalClass, ARefClass):
     @property
     def candle_sets(self):
         """
-        :return: [<estrade.classes.candle_set.CandleSet>]
+        :return: [<estrade.candle_set.CandleSet>]
         """
         return self._candle_sets
 
@@ -73,7 +73,7 @@ class Epic(AMarketOptionalClass, ARefClass):
     def candle_sets(self, candle_sets):
         """
         Set list of CandleSet attached to instance
-        :param candle_sets: [<estrade.classes.candle_set.CandleSet>]
+        :param candle_sets: [<estrade.candle_set.CandleSet>]
         :return:
         """
         self._candle_sets = []
@@ -82,7 +82,7 @@ class Epic(AMarketOptionalClass, ARefClass):
                 raise EpicException('Invalid candleSet {} : epic candle_sets params must be a list'.format(candle_sets))
 
             # import here to prevent import loop
-            from estrade.classes.candle_set import CandleSet
+            from estrade.candle_set import CandleSet
 
             for cs in candle_sets:
                 if not isinstance(cs, CandleSet):
@@ -95,7 +95,7 @@ class Epic(AMarketOptionalClass, ARefClass):
         """
         Get candle_set by timeframe in this instance candle_set
         :param timeframe: <str>
-        :return: <estrade.classes.candle_set.CandleSet> or EpicException if not found
+        :return: <estrade.candle_set.CandleSet> or EpicException if not found
         """
         for cs in self.candle_sets:
             if cs.timeframe == timeframe:
@@ -112,7 +112,7 @@ class Epic(AMarketOptionalClass, ARefClass):
     def _add_tick(self, tick):
         """
         Add a new tick to list of epic ticks
-        :param tick: <estrade.classes.tick.Tick> instance
+        :param tick: <estrade.tick.Tick> instance
         :return:
         """
         self.ticks.append(tick)
@@ -134,7 +134,7 @@ class Epic(AMarketOptionalClass, ARefClass):
         """
         Set Epic timezone
 
-        Timezone is used to update tick date when a new <estrade.classes.tick.Tick> instance is created.
+        Timezone is used to update tick date when a new <estrade.tick.Tick> instance is created.
 
         :param timezone: <str> that should be a valid pytz timezone.
         :return: EpicException if timezone is invalid
@@ -163,7 +163,7 @@ class Epic(AMarketOptionalClass, ARefClass):
 
         The main purpose is to update Epic high/low in meta.
 
-        :param tick: <estrade.classes.tick.Tick>
+        :param tick: <estrade.tick.Tick>
         :return:
         """
         if tick.epic != self:

@@ -1,9 +1,9 @@
 import pytest
 
-from estrade.classes.exceptions import MarketException
+from estrade.exceptions import MarketException
 
-from estrade.classes.epic import Epic
-from estrade.classes.strategy import Strategy
+from estrade.epic import Epic
+from estrade.strategy import Strategy
 from tests.factories import (
     EpicFactory,
     LiveProviderFactory,
@@ -65,7 +65,7 @@ class TestMarketTradeManager:
 class TestOnNewTick:
 
     def test_base(self, mocker):
-        trade_manager_mocker = mocker.patch('estrade.classes.trade_manager.TradeManager.on_new_tick')
+        trade_manager_mocker = mocker.patch('estrade.trade_manager.TradeManager.on_new_tick')
         epic_mocker = mocker.spy(Epic, 'on_new_tick')
         strategy_mocker = mocker.spy(Strategy, 'on_new_tick')
 

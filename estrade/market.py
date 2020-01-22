@@ -1,31 +1,31 @@
 import logging
 
-from estrade.classes.abstract.Aref_class import ARefClass
-from estrade.classes.abstract.Areporting import AReporting
-from estrade.classes.exceptions import MarketException
-from estrade.classes.observer import Observable
-from estrade.classes.strategy import Strategy
-from estrade.classes.trade_manager import TradeManager
+from estrade.ref_mixin import RefMixin
+from estrade.abstract.Areporting import AReporting
+from estrade.exceptions import MarketException
+from estrade.observer import Observable
+from estrade.strategy import Strategy
+from estrade.trade_manager import TradeManager
 
 
 logger = logging.getLogger(__name__)
 
 
-class Market(ARefClass, Observable):
+class Market(RefMixin, Observable):
     """
     A market is the component wrapping provider and epics.
     """
     def __init__(self, strategies, provider, ref=None, reporting=None):
         """
         Init a new Market Instance
-        :param provider: <estrade.classes.provider.Provider> child
+        :param provider: <estrade.provider.Provider> child
         :param ref: <str>
-        :param reporting: <estrade.classes.reporting.AReporting> child
+        :param reporting: <estrade.reporting.AReporting> child
         """
         logger.info('Create new Market')
 
         # init ref via parent
-        ARefClass.__init__(self, ref)
+        RefMixin.__init__(self, ref)
 
         # set as observable so market can fire events.
         Observable.__init__(self)
@@ -69,12 +69,12 @@ class Market(ARefClass, Observable):
     def provider(self, provider):
         """
         Set Market Provider
-        :param provider: <estrade.classes.provider.Provider> child
+        :param provider: <estrade.provider.Provider> child
         :return:
         """
         logger.debug('Set a new market provider')
         # import here to prevent import loop
-        from estrade.classes.abstract.Aprovider import AProvider
+        from estrade.abstract.Aprovider import AProvider
         if not isinstance(provider, AProvider):
             raise MarketException('Invalid Provider')
 
@@ -89,7 +89,7 @@ class Market(ARefClass, Observable):
     def strategies(self):
         """
         return this instance strategies
-        :return: [<estrade.classes.strategy.Strategy> children]
+        :return: [<estrade.strategy.Strategy> children]
         """
         return self._strategies
 
@@ -97,7 +97,7 @@ class Market(ARefClass, Observable):
     def strategies(self, strategies):
         """
         Assign strategies to Market
-        :param strategies: [<estrade.classes.strategy.Strategy> children]
+        :param strategies: [<estrade.strategy.Strategy> children]
         :return:
         """
         self._strategies = []
@@ -141,7 +141,7 @@ class Market(ARefClass, Observable):
         """
         Find an epic in list of epics by its ref.
         :param epic_ref: <str>
-        :return: <estrade.classes.epic.Epic> instance if found, else MarketException
+        :return: <estrade.epic.Epic> instance if found, else MarketException
         """
         for e in self.epics:
             if e.ref == epic_ref:
@@ -163,7 +163,7 @@ class Market(ARefClass, Observable):
     def reporting(self):
         """
         return current instance reporting
-        :return: <estrade.classes.reporting.AReporting> child
+        :return: <estrade.reporting.AReporting> child
         """
         return self._reporting
 
@@ -171,7 +171,7 @@ class Market(ARefClass, Observable):
     def reporting(self, reporting):
         """
         Assign reporting to market
-        :param reporting: <estrade.classes.reporting.Reporting> child
+        :param reporting: <estrade.reporting.Reporting> child
         :return:
         """
         self._reporting = None
@@ -185,7 +185,7 @@ class Market(ARefClass, Observable):
     def on_new_tick(self, tick):
         """
         This method is called every time a new tick is sent by self.provider (see Provider.on_new_tick)
-        :param tick: <estrade.classes.tick.Tick>
+        :param tick: <estrade.tick.Tick>
         :return:
         """
         logger.debug('new tick: %f' % tick.value)

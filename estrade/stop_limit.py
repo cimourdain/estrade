@@ -1,10 +1,10 @@
-from estrade.classes.abstract.Astop_limit import AStopLimit
-from estrade.classes.exceptions import StopLimitException
+from estrade.abstract.Astop_limit import AStopLimit
+from estrade.exceptions import StopLimitException
 
 
 class StopLimitAbsolute(AStopLimit):
     """
-    Class used to manage absolute stop and limits for <estrade.classes.trade.Trade> classes
+    Class used to manage absolute stop and limits for <estrade.trade.Trade> classes
     """
     ##################################################
     # DIRECTION

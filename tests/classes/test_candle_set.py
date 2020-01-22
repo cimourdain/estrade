@@ -3,7 +3,7 @@ from dateutil import tz
 
 import pytest
 
-from estrade.classes.exceptions import CandleSetException
+from estrade.exceptions import CandleSetException
 
 from tests.factories import (
     CandleSetFactory,

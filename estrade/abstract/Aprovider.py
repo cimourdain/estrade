@@ -1,28 +1,31 @@
 import logging
 
-from estrade.classes.abstract.Amarket_class import AMarketOptionalClass
-from estrade.classes.abstract.Atrade_class import ATradeClassUser
-from estrade.classes.exceptions import AProviderException
-from estrade.classes.tick import Tick
+from estrade.market_mixin import MarketOptionalMixin
+from estrade.abstract.Atrade_class import ATradeClassUser
+from estrade.exceptions import AProviderException
+from estrade.tick import Tick
 
 logger = logging.getLogger(__name__)
 
 
-class AProvider(AMarketOptionalClass, ATradeClassUser):
+class AProvider(MarketOptionalMixin, ATradeClassUser):
     """
-    A provider define :
-        - (optionnaly) login to an external provider
-        - tick generation
-        - (optionally) open/close trades management
+    A provider defines how to fetch data to run your strategies.
 
-    Use this Class as parent when you define a 'local' provider (ticks from a database)
+    Use this class as a parent of your provider when your provider only have to fetch ticks.
+    This is recommended for backtests.
+
+    If your provider is a 'live provider', ie. must login to a service, call api to open/close trades etc.
+    you should use the :class:`estrade.ALiveProvider` as a parent of your provider.
     """
     def __init__(self, trade_class=None):
         """
-        Init a new Provider
+        Init a new provider
+        :param: trade_class: instance of :class:`estrade.abstract.ATrade_class.ATradeClassUser`
+
         """
         # init a market property to None
-        AMarketOptionalClass.__init__(self, None)
+        MarketOptionalMixin.__init__(self, None)
         ATradeClassUser.__init__(self, trade_class=trade_class)
 
         # the default provider is automatically logged
@@ -34,18 +37,20 @@ class AProvider(AMarketOptionalClass, ATradeClassUser):
     def on_new_tick(self, epic_ref, bid, ask, datetime):
         """
         Function called by `generate_tick` method for every new tick received. This method:
-            - convert parameters to <estrade.classes.tick.Tick>
+            - convert parameters to <estrade.tick.Tick>
             - send tick to market
-        :param epic_ref: <str>
-        :param bid: <float>
-        :param ask: <float>
-        :param datetime: <datetime.datetime>
+
+        :param epic_ref: str
+        :param bid: float
+        :param ask: float
+        :param datetime: python :class:`datetime.datetime` instance
         :return:
+
         """
         if not self.market:
             raise AProviderException('Cannot handle new tick if provider has no market')
 
-        # convert tick data to estrade.classes.tick.Tick object
+        # convert tick data to estrade.tick.Tick object
         tick = Tick(
             epic=self.market.get_epic(epic_ref),
             bid=bid,
@@ -58,19 +63,21 @@ class AProvider(AMarketOptionalClass, ATradeClassUser):
     def generate_ticks(self):
         """
         This method must be implemented to fetch ticks from provider and call self.on_new_tick for every tick.
-        :return
+
+        :return:
+
         """
         raise NotImplementedError('Implement this method to generate ticks.')
 
     def get_open_trades(self):
         """
         Implement this method to fetch list of open trades from your provider.
-        :return: [<estrade.classes.trade.Trade>,]
+        :return: [<estrade.trade.Trade>,]
         """
         return []
 
 
-class ALiveProvider(AProvider, AMarketOptionalClass):
+class ALiveProvider(AProvider, MarketOptionalMixin):
     """
     A LiveProvider is a Provider with a template for :
         - login

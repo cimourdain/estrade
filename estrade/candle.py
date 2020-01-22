@@ -2,8 +2,8 @@
 """
 import logging
 
-from estrade.classes.exceptions import CandleException
-from estrade.classes.tick import Tick
+from estrade.exceptions import CandleException
+from estrade.tick import Tick
 
 logger = logging.getLogger(__name__)
 
@@ -11,14 +11,14 @@ logger = logging.getLogger(__name__)
 class Candle:
     """
     Class used to represent a Candle (from a clandlesticks graph).
-    This class is used in list of candles of <estrade.classes.candle_set.CandleSet> instances.
+    This class is used in list of candles of <estrade.candle_set.CandleSet> instances.
 
     A candle holds a list of ticks happening between the time/nb defined in CandleSet.
     """
     def __init__(self, open_tick, open_at=None):
         """
         Create a new Candle
-        :param open_tick: <estrade.classes.tick.Tick>
+        :param open_tick: <estrade.tick.Tick>
         :param open_at: <datetime.datetime>
         """
         logger.debug('create new candle')
@@ -152,7 +152,7 @@ class Candle:
     def on_new_tick(self, tick):
         """
         This method append a new tick to the candle.ticks and update candle low/high.
-        :param tick: <estrade.classes.tick.Tick>
+        :param tick: <estrade.tick.Tick>
         :return:
         """
         if not isinstance(tick, Tick):
