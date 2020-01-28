@@ -34,7 +34,7 @@ class AProvider(MarketOptionalMixin, ATradeClassUser):
     ##################################################
     # EVENTS
     ##################################################
-    def on_new_tick(self, epic_ref, bid, ask, datetime):
+    def on_new_tick(self, epic_ref, bid, ask, datetime, **kwargs):
         """
         Function called by `generate_tick` method for every new tick received. This method:
             - convert parameters to <estrade.tick.Tick>
@@ -55,7 +55,8 @@ class AProvider(MarketOptionalMixin, ATradeClassUser):
             epic=self.market.get_epic(epic_ref),
             bid=bid,
             ask=ask,
-            datetime=datetime
+            datetime=datetime,
+            meta=kwargs
         )
 
         self.market.on_new_tick(tick)

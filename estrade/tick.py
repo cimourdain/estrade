@@ -9,7 +9,7 @@ class Tick:
     """
     Class designed to manage a tick (market point value)
     """
-    def __init__(self, epic, datetime, bid, ask):
+    def __init__(self, epic, datetime, bid, ask, meta=None):
         """
         Create a new tick.
         :param epic: <estrade.epic.Epic> instance => tick epic
@@ -22,7 +22,7 @@ class Tick:
         self.datetime = datetime
         self.ask = ask
         self.bid = bid
-        self.meta = {}
+        self.meta = meta
 
     @property
     def epic(self):
