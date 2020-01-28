@@ -23,8 +23,8 @@ class Candle:
         """
         logger.debug('create new candle')
         self.ticks = []
-        self.low = float('inf')
-        self.high = -1
+        self.low_tick = None
+        self.high_tick = None
         self.closed = False
         self.on_new_tick(open_tick)
         self.open_at = open_at if open_at else open_tick.datetime
@@ -59,6 +59,18 @@ class Candle:
         if self.closed:
             return self.last
         return None
+
+    @property
+    def high(self):
+        if not self.high_tick:
+            return -1
+        return self.high_tick.value
+
+    @property
+    def low(self):
+        if not self.low_tick:
+            return float('inf')
+        return self.low_tick.value
 
     ##################################################
     # CANDLE PARTS
@@ -160,10 +172,10 @@ class Candle:
 
         self.ticks.append(tick)
 
-        if tick.value < self.low:
-            self.low = tick.value
-        if tick.value > self.high:
-            self.high = tick.value
+        if not self.low_tick or tick.value < self.low_tick.value:
+            self.low_tick = tick
+        if not self.high_tick or tick.value > self.high_tick.value:
+            self.high_tick = tick
 
     def close_candle(self):
         """
