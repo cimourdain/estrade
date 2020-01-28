@@ -22,6 +22,7 @@ class Tick:
         self.datetime = datetime
         self.ask = ask
         self.bid = bid
+        self.meta = {}
 
     @property
     def epic(self):
