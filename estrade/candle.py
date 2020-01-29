@@ -186,3 +186,7 @@ class Candle:
         :return:
         """
         self.closed = True
+
+    def __repr__(self):
+        return f'Candle : open {self.open}@{self.open_at}, ' \
+               f'{"close" if self.closed else "last"} {self.ticks[-1].value}@{self.ticks[-1].datetime}'
