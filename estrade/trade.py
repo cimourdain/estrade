@@ -31,13 +31,13 @@ class TradeClose:
         self.result = result
         self.reason = reason
 
-    def to_dict(self):
+    def to_json(self):
         """
         Convert trade close to dict (mainly used for reporting)
         :return: <dict>
         """
         return {
-            'tick': self.tick.to_dict(True),
+            'tick': self.tick.to_json(True),
             'quantity': self.quantity,
             'reason': self.reason,
             'result': self.result
@@ -582,7 +582,7 @@ class Trade(RefMixin, Observable):
             'limit_abs': self.limit.absolute_value if self.limit else None,
             'closed_quantity': abs(self.closed_quantity),
             'closed': self.closed,
-            'closes': [c.to_dict() for c in self.closes],
+            'closes': [c.to_json() for c in self.closes],
             'result': self.result,
             'max_loss': self.max_loss,
             'max_gain': self.max_gain,

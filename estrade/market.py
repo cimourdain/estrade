@@ -5,6 +5,7 @@ from estrade.abstract.Areporting import AReporting
 from estrade.exceptions import MarketException
 from estrade.observer import Observable
 from estrade.strategy import Strategy
+from estrade.tick import Tick
 from estrade.trade_manager import TradeManager
 
 
@@ -182,25 +183,68 @@ class Market(RefMixin, Observable):
     ##################################################
     # RUNTIME
     ##################################################
+    def _dispatch_tick_to_epic(self, tick):
+        # dispatch tick to its epic to update candleset and indicators
+        tick.epic.on_new_tick(tick=tick)
+
+        # send tick to strategies attached to its epic
+        for strategy in tick.epic.strategies:
+            logger.debug('dispatch tick to strategy %s' % strategy.ref)
+            strategy.on_new_tick(tick)
+
     def on_new_tick(self, tick):
         """
-        This method is called every time a new tick is sent by self.provider (see Provider.on_new_tick)
-        :param tick: <estrade.tick.Tick>
+        This method is called every time a new tick is sent by provider.
+
+        :param tick: :class:`estrade.tick.Tick`
         :return:
         """
-        logger.debug('new tick: %f' % tick.value)
-        logger.debug('nb strategies : %d' % len(self.strategies))
-
-        if tick.epic not in self.epics:
-            raise MarketException('Tick epic received {}({}) not in market epics {}'.format(
-                tick.epic.ref,
-                id(tick.epic),
-                [(e.ref, id(e)) for e in self.epics]
-            ))
-        tick.epic.on_new_tick(tick=tick)
+        logger.debug('new tick received: %f' % tick.value)
+        Tick.validate(tick)
 
         # update open trades with the new tick
         self.trade_manager.on_new_tick(tick=tick)
+
+        self._dispatch_tick_to_epic(tick)
+
+    def on_new_candle(self, candle):
+        """
+        This method is called every time a new candle is sent by self.provider.
+        :param candle: :class:`estrade.candle.Candle`
+        :return
+        """
+        candle_epic = candle.open_tick.epic
+
+        # dispatch open tick to epic candle_sets
+        self.on_new_tick(tick=candle.open_tick)
+
+        # check that a new candle was created
+        for candle_set in candle_epic.candle_sets:
+            if candle_set.timeframe == candle.timeframe and not candle_set.new_candle_opened:
+                raise MarketException(f'Error, the open tick provided did '
+                                      f'not create a new candle in candle set {candle.timefame}')
+
+        # dispatch high/low to trade_manager
+        self.trade_manager.on_new_tick_high_low(
+            epic=candle_epic,
+            low=candle.low_tick,
+            high=candle.high_tick,
+        )
+        # dispatch high/low to candle sets
+        if candle.high_tick and candle.low_tick:
+            if candle.high_tick.datetime < candle.low_tick.datetime:
+                self._dispatch_tick_to_epic(candle.high_tick)
+                self._dispatch_tick_to_epic(candle.low_tick)
+            else:
+                self._dispatch_tick_to_epic(candle.low_tick)
+                self._dispatch_tick_to_epic(candle.high_tick)
+        elif candle.high_tick:
+            self._dispatch_tick_to_epic(candle.high_tick)
+        elif candle.low_tick:
+            self._dispatch_tick_to_epic(candle.low_tick)
+
+        # dispatch candle close
+        self.on_new_tick(candle.close_tick)
 
     def run(self):
         """
@@ -222,6 +266,6 @@ class Market(RefMixin, Observable):
             raise MarketException('Cannot start when trades are already opened')
 
         logger.info('Generate ticks from provider')
-        self.provider.generate_ticks()
+        self.provider.generate()
 
         self.fire('market_run_end')

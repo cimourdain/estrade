@@ -31,7 +31,7 @@ class TestSimpleMovingAverage:
         ]
         for l in loops:
             # WHEN i add a tick @1000, then no sma is calculated (not enough periods)
-            market.provider.generate_ticks(ticks_dicts=[{
+            market.provider.generate(ticks_dicts=[{
                 'epic_ref': epic.ref,
                 'bid': l['price'] - 1,
                 'ask': l['price'] + 1,
@@ -81,7 +81,7 @@ class TestExponentialMovingAverage:
 
         loop_nb = 0
         for l in loops:
-            market.provider.generate_ticks(ticks_dicts=[
+            market.provider.generate(ticks_dicts=[
                 {
                     'epic_ref': epic.ref,
                     'bid': l['price'] - 1,

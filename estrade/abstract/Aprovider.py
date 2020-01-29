@@ -1,8 +1,9 @@
 import logging
 
+from estrade.exceptions import AProviderException
 from estrade.market_mixin import MarketOptionalMixin
 from estrade.abstract.Atrade_class import ATradeClassUser
-from estrade.exceptions import AProviderException
+from estrade.candle import Candle
 from estrade.tick import Tick
 
 logger = logging.getLogger(__name__)
@@ -31,39 +32,42 @@ class AProvider(MarketOptionalMixin, ATradeClassUser):
         # the default provider is automatically logged
         self.logged = True
 
-    ##################################################
-    # EVENTS
-    ##################################################
-    def on_new_tick(self, epic_ref, bid, ask, datetime, **kwargs):
-        """
-        Function called by `generate_tick` method for every new tick received. This method:
-            - convert parameters to <estrade.tick.Tick>
-            - send tick to market
-
-        :param epic_ref: str
-        :param bid: float
-        :param ask: float
-        :param datetime: python :class:`datetime.datetime` instance
-        :return:
-
-        """
+    def build_tick(self, epic_ref, datetime, bid, ask, **kwargs):
         if not self.market:
-            raise AProviderException('Cannot handle new tick if provider has no market')
+            raise AProviderException('Cannot build tick when provider has no market')
 
-        # convert tick data to estrade.tick.Tick object
-        tick = Tick(
+        return Tick(
             epic=self.market.get_epic(epic_ref),
+            datetime=datetime,
             bid=bid,
             ask=ask,
-            datetime=datetime,
             meta=kwargs
         )
 
-        self.market.on_new_tick(tick)
+    def build_candle(self, timeframe, open_tick, close_tick, high_tick=None, low_tick=None):
+        candle = Candle(
+            timeframe=timeframe,
+            epic_ref=open_tick.epic.ref,
+            open_tick=open_tick
+        )
+        if high_tick:
+            candle.on_new_tick(high_tick)
+        if low_tick:
+            candle.on_new_tick(low_tick)
 
-    def generate_ticks(self):
+        candle.on_new_tick(close_tick)
+
+        return candle
+
+    ##################################################
+    # EVENTS
+    ##################################################
+    def generate(self):
         """
-        This method must be implemented to fetch ticks from provider and call self.on_new_tick for every tick.
+        This method must be implemented to fetch ticks or candles from provider.
+
+        If your provider generates ticks: this method must call `self.market.on_new_tick(tick)` method.
+        If your provider gererates candles: this method must call `self.market.on_new_candle(candle)` method.
 
         :return:
 

@@ -22,7 +22,7 @@ class TestProvider:
 
         # THEN call to generate ticks raise a NotImplemented error (must be implemented by child)
         with pytest.raises(NotImplementedError):
-            assert provider.generate_ticks()
+            assert provider.generate()
 
     def test_call_on_new_tick_with_no_market(self):
         # GIVEN a provider instanciated from abstract method with no market attached
@@ -30,7 +30,7 @@ class TestProvider:
 
         # WHEN i call the on_new_tick method, then an exception is raised because no market is attached
         with pytest.raises(AProviderException):
-            provider.on_new_tick(epic_ref='test', bid=1000, ask=1001, datetime=datetime.now())
+            provider.build_tick(epic_ref='test', bid=1000, ask=1001, datetime=datetime.now())
 
 
 class TestTradeClass:
@@ -81,4 +81,4 @@ class TestLiveProvider:
             assert provider.login() is None
 
         with pytest.raises(NotImplementedError):
-            assert provider.generate_ticks() is None
+            assert provider.generate() is None

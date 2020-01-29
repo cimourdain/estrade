@@ -231,10 +231,6 @@ class Strategy(MarketOptionalMixin, RefMixin):
         This method check if opening and/or closing srategies have to be applied and then call the opening/closing
         methods.
 
-        WARNING: this method is called AFTER epics and candle set are updated (see subscriptions). As a consequence,
-        if any epic candleset create a new candle for this tick.
-        The `on_new_candle` method of this instance will be called BEFORE this method.
-
         :param tick: <estrade.tick.Tick>
         :return:
         """
@@ -274,6 +270,12 @@ class Strategy(MarketOptionalMixin, RefMixin):
                     logger.debug('call new candle opening strategy bc '
                                  'a new candle was created in %s' % candle_set.timeframe)
                     self.on_new_candle_opening_strategy(candle_set=candle_set)
+
+    def on_new_candle(self, candle):
+        # check market
+        # check close time
+        # closing strategy on all 4 ticks
+        pass
 
     ##################################################
     # Strategy apply method to be implemented

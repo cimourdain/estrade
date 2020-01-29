@@ -94,7 +94,7 @@ class Tick:
             self.datetime, self.value, self.bid, self.ask, self.spread
         )
 
-    def to_dict(self, datetime_to_str=False):
+    def to_json(self, datetime_to_str=False):
         """
         Convert tick to dictionary (mainly used for reporting)
         :param datetime_to_str: <bool> => does the datetime value in dict must convert datetime to string?
@@ -107,3 +107,9 @@ class Tick:
             'spread': self.spread,
             'value': self.value
         }
+
+    @staticmethod
+    def validate(tick):
+        if not isinstance(tick, Tick):
+            raise TickException('Invalid tick instance')
+        return True
