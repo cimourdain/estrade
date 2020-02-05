@@ -23,13 +23,15 @@ fake = Faker()
 
 class ProviderFactory(AProvider):
 
-    def generate_ticks(self, ticks_dicts):
+    def generate(self, ticks_dicts):
         for tick in ticks_dicts:
-            self.on_new_tick(
-                epic_ref=tick['epic_ref'],
-                bid=tick['bid'],
-                ask=tick['ask'],
-                datetime=tick['datetime']
+            self.market.on_new_tick(
+                self.build_tick(
+                    epic_ref=tick['epic_ref'],
+                    bid=tick['bid'],
+                    ask=tick['ask'],
+                    datetime=tick['datetime']
+                )
             )
 
 
@@ -128,6 +130,8 @@ class CandleFactory(factory.Factory):
     class Meta:
         model = Candle
 
+    timeframe = '5minutes'
+    epic_ref = EpicFactory().ref
     open_tick = TickFactory()
 
 

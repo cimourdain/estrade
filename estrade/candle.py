@@ -15,13 +15,15 @@ class Candle:
 
     A candle holds a list of ticks happening between the time/nb defined in CandleSet.
     """
-    def __init__(self, open_tick, open_at=None):
+    def __init__(self, timeframe, epic_ref, open_tick, open_at=None, meta=None):
         """
         Create a new Candle
         :param open_tick: <estrade.tick.Tick>
         :param open_at: <datetime.datetime>
         """
         logger.debug('create new candle')
+        self.timeframe = timeframe
+        self.epic_ref = epic_ref
         self.ticks = []
         self.low_tick = None
         self.high_tick = None
@@ -29,6 +31,7 @@ class Candle:
         self.on_new_tick(open_tick)
         self.open_at = open_at if open_at else open_tick.datetime
         self.indicators = {}
+        self.meta = meta
         logger.debug('new candle created: %s' % self.open_at)
 
     ##################################################
@@ -71,6 +74,18 @@ class Candle:
         if not self.low_tick:
             return float('inf')
         return self.low_tick.value
+
+    @property
+    def open_tick(self):
+        if not self.ticks:
+            return None
+        return self.ticks[0]
+
+    @property
+    def last_tick(self):
+        if not self.ticks:
+            return None
+        return self.ticks[-1]
 
     ##################################################
     # CANDLE PARTS
@@ -164,7 +179,7 @@ class Candle:
     def on_new_tick(self, tick):
         """
         This method append a new tick to the candle.ticks and update candle low/high.
-        :param tick: <estrade.tick.Tick>
+        :param tick: :class:`estrade.tick.Tick`
         :return:
         """
         if not isinstance(tick, Tick):
@@ -187,6 +202,20 @@ class Candle:
         """
         self.closed = True
 
-    def __repr__(self):
+    def __str__(self):
         return f'Candle : open {self.open}@{self.open_at}, ' \
                f'{"close" if self.closed else "last"} {self.ticks[-1].value}@{self.ticks[-1].datetime}'
+
+    def to_json(self):
+        return {
+            'timeframe': self.timeframe,
+            'epic': self.epic_ref,
+            'nb_ticks': len(self.ticks),
+            'open': self.open_tick.to_json(),
+            'high': self.high_tick.to_json() if self.high_tick else None,
+            'low': self.low_tick.to_json() if self.low_tick else None,
+            'closed': self.closed,
+            'close': self.ticks[-1].to_json() if self.closed else None,
+            'indicators': self.indicators,
+            'meta': self.meta
+        }

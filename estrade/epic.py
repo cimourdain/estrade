@@ -184,8 +184,3 @@ class Epic(MarketOptionalMixin, RefMixin):
         for candle_set in self.candle_sets:
             logger.debug('dispatch tick to candle set %s' % candle_set.timeframe)
             candle_set.on_new_tick(tick)
-
-        logger.debug('dispatch tick to %d strategies' % (len(self.strategies)))
-        for strategy in self.strategies:
-            logger.debug('dispatch tick to strategy %s' % strategy.ref)
-            strategy.on_new_tick(tick)

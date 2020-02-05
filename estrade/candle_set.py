@@ -385,6 +385,8 @@ class CandleSet(Observable):
         :return:
         """
         self.candles.append(Candle(
+            timeframe=self.timeframe,
+            epic_ref=self.epic.ref,
             open_at=self.round_candle_open_dt(tick.datetime),
             open_tick=tick
         ))

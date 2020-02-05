@@ -101,7 +101,7 @@ class TestMarketRun:
 
     def test_base(self, mocker):
         market = MarketFactory()
-        provider_generate = mocker.patch.object(market.provider, 'generate_ticks')
+        provider_generate = mocker.patch.object(market.provider, 'generate')
         market.run()
         assert provider_generate.called
 

@@ -23,7 +23,7 @@ class TestProvider:
         market_on_new_tick = mocker.spy(market, 'on_new_tick')
 
         # WHEN i generate ticks from provider
-        provider.generate_ticks(ticks_dicts=[
+        provider.generate(ticks_dicts=[
             {
                 'epic_ref': market.epics[0].ref,
                 'bid': 999,
@@ -39,7 +39,7 @@ class TestLiveProvider:
     def test_subscribe(self, mocker):
         provider = LiveProviderFactory()
         login_mocker = mocker.patch.object(provider, 'login', return_value=True)
-        generate_ticks_mocker = mocker.patch.object(provider, 'generate_ticks', return_value=True)
+        generate_ticks_mocker = mocker.patch.object(provider, 'generate', return_value=True)
         market = MarketFactory(provider=provider)
         provider.logged = True
         market.run()

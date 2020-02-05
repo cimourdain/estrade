@@ -147,13 +147,19 @@ class TradeManager(MarketMandatoryMixin, ATradeClassUser, Observable):
         :param tick: <estrade.tick.Tick>
         :return:
         """
-        from estrade.tick import Tick
-        if not isinstance(tick, Tick):
-            raise TradeManagerException('Invalid tick received')
-
         for trade in reversed(self.open_trades):
             if tick.epic == trade.epic:
                 trade.on_new_tick(tick)
+
+    def on_new_tick_high_low(self, epic, high, low):
+        for trade in reversed(self.open_trades):
+            if trade.epic == epic:
+                if trade.direction > 0:
+                    trade.on_new_tick(low)
+                    trade.on_new_tick(high)
+                else:
+                    trade.on_new_tick(high)
+                    trade.on_new_tick(low)
 
     ##################################################
     # CLOSE TRADE

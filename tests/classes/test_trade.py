@@ -331,7 +331,7 @@ class TestTradeClose:
         trade = TradeFactory(quantity=3, direction=-1)
         trade.close(quantity=2)
         assert trade.closed_quantity == 2
-        close_dict = trade.closes[0].to_dict()
+        close_dict = trade.closes[0].to_json()
         assert isinstance(close_dict['tick'], dict)
         assert isinstance(close_dict['tick']['datetime'], str)
 
