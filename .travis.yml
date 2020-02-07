@@ -1,11 +1,17 @@
 language: python
-python:
-  - "3.6"      # current default Python on Travis CI
+
+env:
+  - PYVERSION=py36
+  - PYVERSION=py37
+  - PYVERSION=py38
+
+services:
+  - docker
+before_install:
+  - curl -L "https://github.com/docker/compose/releases/download/1.25.3/docker-compose-$(uname -s)-$(uname -m)" -o ./docker-compose
+  - chmod +x ./docker-compose
+  - sudo mv docker-compose /usr/local/bin
 # command to install dependencies
-install:
-  - pip install -r requirements.txt
-  - pip install -r requirements-dev.txt
-# command to run tests
 script:
-  - pytest tests/
-  - flake8  --max-line-length 120 estrade/
+  - make lint
+  - make test
