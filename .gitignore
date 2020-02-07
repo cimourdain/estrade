@@ -25,3 +25,6 @@ samples/providers/database/migration.py
 # doc
 /docs/_build/*
 /docs/*.bat
+
+# tox
+.tox/

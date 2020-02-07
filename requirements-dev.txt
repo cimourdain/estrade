@@ -1,7 +1,7 @@
+-r  requirements.txt
 factory_boy
 flake8
 freezegun
-py-spy
 pytest
 pytest-cov
 pytest-mock
