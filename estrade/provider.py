@@ -1,10 +1,9 @@
 import logging
+from datetime import datetime, timedelta
 
 from estrade.exceptions import ProviderException
 from estrade.market_mixin import MarketOptionalMixin
 from estrade.mixins.trade_class_mixin import TradeClassMixin
-from estrade.candle import Candle
-from estrade.tick import Tick
 
 logger = logging.getLogger(__name__)
 
@@ -13,51 +12,69 @@ class Provider(MarketOptionalMixin, TradeClassMixin):
     """
     A provider defines how to fetch data to run your strategies.
 
-    Use this class as a parent of your provider when your provider only have to fetch ticks.
-    This is recommended for backtests.
+    This class is recommended for your backtests.
 
-    If your provider is a 'live provider', ie. must login to a service, call api to open/close trades etc.
-    you should use the :class:`estrade.ALiveProvider` as a parent of your provider.
+    Inherit from this class to fill your ticks to the :class:`estrade.Market`
+
+    .. note::
+        If your provider is a 'live provider' (ie. must login to a service, call api to open/close trades etc.)
+        you should use the :class:`estrade.LiveProvider` as a parent of your provider.
+
+    :param Estrade.trade.Trade trade_class: trade class used to open/close trades
+    :param datetime.datetime start_date: optional start date
+    :param datetime.datetime end_date: optional end date
     """
-    def __init__(self, trade_class=None):
-        """
-        Init a new provider
-        :param: trade_class: instance of :class:`estrade.mixins.ATrade_class.ATradeClassUser`
 
-        """
+    def __init__(self, trade_class=None, start_date=None, end_date=None):
         # init a market property to None
         MarketOptionalMixin.__init__(self, None)
         TradeClassMixin.__init__(self, trade_class=trade_class)
 
+        self.start_date = start_date
+        self.end_date = end_date
+
         # the default provider is automatically logged
         self.logged = True
 
-    def build_tick(self, epic_ref, datetime, bid, ask, **kwargs):
-        if not self.market:
-            raise ProviderException('Cannot build tick when provider has no market')
+    @property
+    def start_date(self):
+        return self._start_date
 
-        return Tick(
-            epic=self.market.get_epic(epic_ref),
-            datetime=datetime,
-            bid=bid,
-            ask=ask,
-            meta=kwargs
-        )
+    @start_date.setter
+    def start_date(self, start_date):
+        self._start_date = None
+        if isinstance(start_date, str):
+            try:
+                self._start_date = datetime.strptime(start_date, '%Y-%m-%d')
+            except:
+                raise ProviderException('Invalid start date format')
 
-    def build_candle(self, timeframe, open_tick, close_tick, high_tick=None, low_tick=None):
-        candle = Candle(
-            timeframe=timeframe,
-            epic_ref=open_tick.epic.ref,
-            open_tick=open_tick
-        )
-        if high_tick:
-            candle.on_new_tick(high_tick)
-        if low_tick:
-            candle.on_new_tick(low_tick)
+        if isinstance(start_date, datetime):
+            self._start_date = start_date
 
-        candle.on_new_tick(close_tick)
+    @property
+    def end_date(self):
+        return self._end_date
 
-        return candle
+    @end_date.setter
+    def end_date(self, end_date):
+        self._end_date = None
+        if isinstance(end_date, str):
+            try:
+                self._end_date = datetime.strptime(end_date, '%Y-%m-%d')
+            except:
+                raise ProviderException('Invalid start date format')
+
+        if isinstance(end_date, datetime):
+            self._end_date = end_date
+
+    @property
+    def backtest_dates_generator(self):
+        if not self.start_date or not self.end_date:
+            raise ProviderException('Cannot use backtest_dates_generator when either start_date or end_date is not defined')
+        for n in range(int((self.end_date - self.start_date).days + 1)):
+            trading_date = self.start_date + timedelta(n)
+            yield trading_date.date()
 
     ##################################################
     # EVENTS
@@ -66,40 +83,36 @@ class Provider(MarketOptionalMixin, TradeClassMixin):
         """
         This method must be implemented to fetch ticks or candles from provider.
 
-        Tick mode:
-            If your provider generates ticks: this method must :
-                1. Build a :class:`estrade.Tick` calling :func:`~estrade.mixins.Aprovider.AProvider.build_tick` method.
-                2. Send the tick to market calling :func:`estrade.market.Market.on_new_tick` method
+        If your provider generates ticks, this method must send the tick
+        to market calling :func:`estrade.market.Market.on_new_tick` method.
 
-            eg::
+        eg::
 
-                from estrade import AProvider
-                from random import randint
+            from estrade import Provider
+            from estrade import Tick
 
-                class MyProvider(AProvider):
-                    SPREAD = 1
+            class MyProvider(Provider):
 
-                    def generate():
-                        for _ in range(100):
-                            # generate a random value
-                            random_value = randint(1000, 2000)
-
-                            # build a Tick instance
-                            tick = self.build_tick(
-                                epic_ref='MY_EPIC_CODE',
-                                datetime=datetime.now(),
-                                bid=random_value + (SPREAD / 2),
-                                ask=random_value - (SPREAD / 2),
-                                my_param='test', # extra values are stored in tick meta
-                            )
-
-                            # send tick to market
-                            self.market.on_new_tick(tick)
-
-        Candle mode:
-            If your provider generates candles: this method must call `self.market.on_new_candle(candle)` method.
-
-        :return:
+                def generate(self):
+                    '''
+                        This method parse all ticks from your database.
+                        It assumes that your ticks holds the following attributes:
+                        - epic code
+                        - bid
+                        - ask
+                        - datetime
+                    '''
+                    # eg. query ticks in your database (ordered by datetime)
+                    for tick in my_database:
+                        # build a tick from your data
+                        tick = Tick(
+                            epic=self.market.get_epic(tick['epic_code']),
+                            bid=tick['bid'],
+                            ask=tick['ask'],
+                            datetime['datetime'],
+                        )
+                    # dispatch tick to market
+                    self.market.on_new_tick(tick)
 
         """
         pass

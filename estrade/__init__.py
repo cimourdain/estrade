@@ -4,6 +4,7 @@ __version__ = '0.0.1'
 from estrade.strategy import Strategy  # noqa
 from estrade.mixins.reporting_mixin import ReportingMixin  # noqa
 
+from estrade.candle import Candle  # noqa
 from estrade.candle_set import CandleSet  # noqa
 from estrade.epic import Epic  # noqa
 from estrade.market import Market  # noqa
@@ -17,7 +18,7 @@ from estrade.indicators.candle_set.moving_average import (  # noqa
 )  # noqa
 
 # reporting
-from estrade.reporting.csv import ReportingMixinCSV  # noqa
+from estrade.reporting.csv import ReportingCSV  # noqa
 
 # logging
 import logging

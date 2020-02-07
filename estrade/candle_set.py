@@ -22,33 +22,26 @@ ALLOWED_UT = [
 
 class CandleSet(Observable):
     """
-    A CandleSet create candles, add ticks and close a list of Candles<estrade.candle.Candle>
+    A CandleSet create candles, add ticks and close a list of Candles :class:`estrade.candle.Candle`
     based on its timeframe.
 
-    CandleSet receive ticks via its on_new_tick method :
-        - if candle timeframe is over : close last candle and open a new one with the new tick
-        - else append the tick to the current candle
-    """
-    def __init__(self, timeframe, indicators=None, max_candles_in_memory=100, log_level=None):
-        """
-        Init a new CandleSet.
-        :param timeframe: <str>
-            A timeframe define either a number of time units either a number of ticks.
-            It defines how long will last every candle.
+    :param str timeframe: A timeframe define either a number of time units either a number of ticks. eg. '3ticks', '56ticks', '30seconds', '3minutes', '4hours'.
 
-            eg. '3ticks', '56ticks', '30seconds', '3minutes', '4hours'
-            notes:
+        .. note ::
                 - unit must always be plural ('1hours' and not '1hour')
                 - timeframe is splitted between (see timeframe setter)
-                    - "ut" (time unit, eg. ticks, minutes, hours etc.)
-                    - "nb" (nb of time unit)
-        :param indicators: [children of <estrade.Acandleset_indicators.AbstractCandleSetIndicators>]
-        :param max_candles_in_memory: <int> defines the number of candles kept in memory by candleSet.
-            - note: the bigger the number of candles, the slower your program will be
-            - warning: keep this number high enough for your indicators using candle to work properly (eg. if you use
-            an indicator for moving average 200, the max number of candles in memory should at least be 200)
-            FIXME : control this on CandleSet init
-        """
+                - "ut" (time unit, eg. ticks, minutes, hours etc.)
+                - "nb" (nb of time unit)
+
+    :param `estrade.mixins.candle_set_indicator_mixin.CandleSetIndicatorMixin` indicators: list of indicator objects (see indicators section)
+    :param int max_candles_in_memory: defines the number of candles kept in memory by candleSet.
+
+        .. note ::
+                - note: the bigger the number of candles, the slower your program will be
+                - warning: keep this number high enough for your indicators using candle to work properly (eg. if you use an indicator for moving average 200, the max number of candles in memory should at least be 200)
+
+    """
+    def __init__(self, timeframe, indicators=None, max_candles_in_memory=100, log_level=None):
         logger.debug('Create new candle Set with timeframe %s' % timeframe)
         # CandleSet fire events to
         #   - indicators (to update indicator values)
@@ -446,8 +439,8 @@ class CandleSet(Observable):
         This method is the entry point called on every new tick.
             - update candles (close and open candles if required or add tick to current candle)
             - send events (to update indicators, call strategies candle events etc.)
-        :param tick: <estrade.tick.Tick>
-        :return: <bool>
+
+        :param estrade.Tick tick: tick instance
         """
         logger.debug('%s : add tick in candle set: %s' % (self.timeframe, tick))
         if not self.epic:
@@ -486,7 +479,6 @@ class CandleSet(Observable):
             indicator.on_new_tick(tick=tick)
 
         self.fire('candle_set_after_on_new_tick_{}'.format(tick.epic.ref), tick=tick)
-        return True
 
     ##################################################
     # FLUSH

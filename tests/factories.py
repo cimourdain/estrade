@@ -26,8 +26,8 @@ class ProviderFactory(Provider):
     def generate(self, ticks_dicts):
         for tick in ticks_dicts:
             self.market.on_new_tick(
-                self.build_tick(
-                    epic_ref=tick['epic_ref'],
+                Tick(
+                    epic=self.market.get_epic(tick['epic_ref']),
                     bid=tick['bid'],
                     ask=tick['ask'],
                     datetime=tick['datetime']

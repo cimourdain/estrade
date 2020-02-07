@@ -14,15 +14,18 @@ class RandomStrategy(Strategy):
 
     def check_tick_time(self, tick):
         """
-        Only run strategy bewteen 10h and 11H
-        :param tick: <estrade.classes.tick.Tick> instance
-        :return:
+        Only run strategy between 10h and 11H
         """
         if 10 <= tick.datetime.hour < 11:
             return True
         return False
 
     def on_new_tick_opening_strategy(self, tick):
+        """
+        Opening strategy: executed when number of opened trades < self.max_concurrent_trades
+
+        this strategy randomly open a trade.
+        """
         r = randint(0, self.random_factor)
         if r == 0:
             logger.info('open trade from random strategy')
@@ -36,8 +39,8 @@ class RandomStrategy(Strategy):
     def on_new_tick_closing_strategy(self, tick):
         """
         Closing strategy: executed when a trade is open
-        :param tick: <estrade.classes.tick.Tick> instance
-        :return:
+
+        this strategy randomly close opened trades.
         """
         r = randint(0, self.random_factor)
         if r == 0:

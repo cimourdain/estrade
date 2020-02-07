@@ -6,7 +6,7 @@ from estrade.utils.csv import CSVWriter
 logger = logging.getLogger(__name__)
 
 
-class ReportingMixinCSV(ReportingMixin):
+class ReportingCSV(ReportingMixin):
 
     @property
     def base_path(self):

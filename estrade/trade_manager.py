@@ -11,12 +11,13 @@ logger = logging.getLogger(__name__)
 class TradeManager(MarketMandatoryMixin, TradeClassMixin, Observable):
     """
     A trade manager handle a list of trades.
+
+    :param estrade.Market market: market instance
+    :param list trades: list of pre-existing trades
     """
     def __init__(self, market=None, trades=None):
         """
         Init a new trade manager
-        :param market: <estrade.market.Market> instance
-        :param trades: [<self.trade_class>,]
         """
         # init list of trades
         self.trades = trades
@@ -100,9 +101,10 @@ class TradeManager(MarketMandatoryMixin, TradeClassMixin, Observable):
 
     def open_trade(self, *args, **kwargs):
         """
-        Open a new trade
-        :param args/kwargs: agrs/kwargs required to open a trade (see <self.trade_class.__init__> )
-        :return: <self.trade_class> instance
+        This method create a new trade.
+
+        :param args/kwargs: arguments to instanciate a new instance of the current `trade_class` (by default a :class:`estrade.trade.Trade` instance)
+        :return: `trade_class` instance
         """
         logger.debug('Open new trade')
         self.fire('trade_manager_before_new_trade', *args, **kwargs)
@@ -281,11 +283,12 @@ class TradeManager(MarketMandatoryMixin, TradeClassMixin, Observable):
     ##################################################
     def get_trades(self, only_opened=False, only_closed=False, strategy=None):
         """
-        get a list of trade based on search input params
-        :param only_opened: <bool> only return opened trades
-        :param only_closed: <bool> only return closed trades
-        :param strategy: <estrade.strategy.Strategy> child instance
-        :return: [<self.trade_class>,]
+        Get a list of trade based on search input params
+
+        :param only_opened: (bool) only return opened trades
+        :param only_closed: (bool) only return closed trades
+        :param :class:`estrade.Strategy` strategy: Strategy instance
+        :return: [:class:`estrade.trade.Trade`,] list of trades
         """
         if strategy:
             if only_closed:

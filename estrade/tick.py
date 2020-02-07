@@ -8,20 +8,22 @@ from estrade.exceptions import TickException
 class Tick:
     """
     Class designed to manage a tick (market point value)
+
+    :param estrade.Epic epic: tick epic
+    :param arrow.Arrow datetime: tick datetime
+    :param float bid: market bid value for this tick
+    :param float ask: market ask value for this tick
+    :param dict meta: free dictionary where you can store anything you need
     """
     def __init__(self, epic, datetime, bid, ask, meta=None):
         """
         Create a new tick.
-        :param epic: <estrade.epic.Epic> instance => tick epic
-        :param datetime: <datetime.datetime> tick datetime
-        :param bid: <float> market bid value for this tick
-        :param ask: <float> market ask value for this tick
-        :param timezone: <str> pytz timezone
         """
         self.epic = epic
         self.datetime = datetime
         self.ask = ask
         self.bid = bid
+
         self.meta = meta
 
     @property
@@ -40,15 +42,17 @@ class Tick:
     def spread(self):
         """
         The spread is the difference between bid and ask
-        :return: <float>
+
+        :return: (float) spread value
         """
         return round(self.ask - self.bid, 2)
 
     @property
     def value(self):
         """
-        The tick value is the value exacly in the middle between bid and ask
-        :return: <float>
+        The tick value is the value exactly in the middle between bid and ask
+
+        :return: (float) spread value
         """
         return round(self.bid + (self.spread / 2), 2)
 
@@ -56,15 +60,18 @@ class Tick:
     def datetime(self):
         """
         return tick datetime
-        :return: <arrow.Arrow>
+
+        :return: `arrow.Arrow`: tick datetime
         """
         return self._datetime
 
     @property
     def datetime_utc(self):
         """
-        Return datetime as UTC
-        :return:<arrow.Arrow>
+        Return datetime as UTC, this method is useful when your tick datetime
+        is zoned.
+
+        :return: (`arrow.Arrow`): tick datetime zoned to UTC
         """
         return self._datetime.to('UTC')
 

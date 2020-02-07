@@ -25,8 +25,8 @@ class TestProvider:
         provider = Provider()
 
         # WHEN i call the on_new_tick method, then an exception is raised because no market is attached
-        with pytest.raises(ProviderException):
-            provider.build_tick(epic_ref='test', bid=1000, ask=1001, datetime=datetime.now())
+        with pytest.raises(AttributeError):
+            provider.market.on_new_tick(epic_ref='test', bid=1000, ask=1001, datetime=datetime.now())
 
 
 class TestTradeClass:

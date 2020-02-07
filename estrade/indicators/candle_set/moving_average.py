@@ -40,6 +40,13 @@ class MovingAverageMixin(CandleSetIndicatorMixin):
 
 
 class SimpleMovingAverage(MovingAverageMixin):
+    """
+    Simple moving average indicator to add on a :class:`estrade.CandleSet` object.
+
+    :param int periods: number of periods ot the moving average
+    :param str name: name of the indicator. It is **strongly** advised to give a name to your indicator so you can fetch their values in your strategy (see :func:`estrade.Strategy.get_indicator`)
+
+    """
 
     @property
     def value(self):
@@ -47,6 +54,13 @@ class SimpleMovingAverage(MovingAverageMixin):
 
 
 class ExponentialMovingAverage(MovingAverageMixin):
+    """
+    Exponential moving average indicator to add on a :class:`estrade.CandleSet` object.
+
+    :param int periods: number of periods ot the moving average
+    :param str name: name of the indicator. It is **strongly** advised to give a name to your indicator so you can fetch their values in your strategy (see :func:`estrade.Strategy.get_indicator`)
+
+    """
 
     def __init__(self, periods, *args, **kwargs):
         self._ema = None

@@ -30,7 +30,7 @@ Guide
 =====
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
 
     install
     quickstart
@@ -39,23 +39,30 @@ API Reference
 =============
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 3
 
-    reference
+    provider
+    strategy
+    tick
+    candle_set
+    candle
+    indicators
+    trade
+    trade_manager
 
 
 Contribute
-----------
+==========
 
 - Issue Tracker: github.com/$project/$project/issues
 - Source Code: github.com/$project/$project
 
 Support
--------
+=======
 
 If you are having issues, please let us know.
 
 License
--------
+=======
 
 The project is licensed under the GPL 3.0 license.

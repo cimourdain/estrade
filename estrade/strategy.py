@@ -10,17 +10,17 @@ logger = logging.getLogger(__name__)
 
 class Strategy(MarketOptionalMixin, RefMixin):
     """
-    This class define comportment of a trading bot strategy.
+    This class define a strategy to apply on ticks/candles.
+
+    Add instances of this class to your :class:`estrade.Market` to apply strategies on your data.
+
+    :param estrade.Epic epic: epic instance
+    :param dict params: dict of parameters you can re-use in your strategy methods
+    :param str ref: it is the strategy name
+    :param int max_concurrent_trades: nb max of trades concurrently opened
     """
+
     def __init__(self, epics, params=None, ref=None, max_concurrent_trades=1):
-        """
-        Init a new strategy
-        :param epics: [<estrade.epics.Epic>,]
-        :param params: <dict> (only to use in strategy execution method)
-        :param ref: <str> strategy name
-        :param max_concurrent_trades: <int> nb max of trades concurrently opened
-        :param log_level: <logging.LEVEL> or None
-        """
         logger.info('Init new strategy creation')
         # init class ref attribute
         RefMixin.__init__(self, ref)
@@ -107,9 +107,11 @@ class Strategy(MarketOptionalMixin, RefMixin):
     ##################################################
     def get_epic(self, epic_ref):
         """
-        Helper method to find epic in strategies epic from ref
-        :param epic_ref: <str>
-        :return: <estrade.epic.Epic> if found else <estrade.exceptions.StrategyException>
+        Getter to find epic in strategies epic from ref.
+
+        :param epic_ref: (str)
+        :raises: :class:`estrade.exeptions.StrategyException` : if epic not found on market
+        :return: :class:`estrade.epic.Epic`: epic instance
         """
         for epic in self.epics:
             if epic.ref == epic_ref:
@@ -118,20 +120,41 @@ class Strategy(MarketOptionalMixin, RefMixin):
 
     def get_candle_set(self, epic_ref, timeframe):
         """
-        Helper to fetch a candle set from epic_ref and timeframe
-        :param epic_ref: <str> (matching an epic in self.epics)
-        :param timeframe: <str> (matching a candleset.timeframe in epic)
-        :return: <estrade.candle_set.CandleSet> instance
+        Getter to find a candle set from epic_ref and timeframe
+
+        :param epic_ref: (str) (matching an epic current strategy epics)
+        :param timeframe: (str) (matching a candleset.timeframe in epic)
+        :raises: :class:`estrade.exeptions.StrategyException` : if epic not found on market
+        :raises: :class:`estrade.exeptions.EpicException` : if no candle set with this timeframe found on this epic
+        :return: :class:`estrade.candle_set.CandleSet` instance
         """
         return self.get_epic(epic_ref).get_candle_set(timeframe)
 
     def get_candle(self, epic_ref, timeframe, offset=0):
         """
-        Helper to get a candle from a candle set in self.epics
-        :param epic_ref: <str> (matching an epic ref in self.epics)
-        :param timeframe: <str> (matching an candle set timeframe in the above epic)
-        :param offset: <int> nb of candles backward from the last candle in candle set found
-        :return: <estrade.candle.Candle> instance or None if not found
+        Getter to find a candle by its offset in a candleset
+
+        Offset usage example:
+            - 0: returns the currently opened candle on candleset
+            - 1 : returns the last closed candle
+            - etc.
+
+        .. note ::
+            Reserve usage of this getter when you need to find candles that are not the
+            current candle or the last closed candle.
+
+            It is recommendend to use the :class:`estrade.CandleSet` attributes
+            (`last_closed_candle`, `current_candle`) for these cases.
+
+        :param epic_ref: (str) (matching an epic current strategy epics)
+        :param timeframe: (str) (matching a candleset.timeframe in epic)
+        :param offset: (int)
+        :raises:
+            - :class:`estrade.exeptions.StrategyException` : if epic not found on market
+            - :class:`estrade.exeptions.EpicException` : if no candle set with this timeframe found on this epic
+        :return:
+            - :class:`estrade.candle.Candle` instance : if candle matching this offset found
+            - None: if no candle matching this offset found
         """
         offset = abs(offset) + 1
         cs = self.get_candle_set(epic_ref, timeframe)
@@ -141,12 +164,18 @@ class Strategy(MarketOptionalMixin, RefMixin):
 
     def get_indicator(self, epic_ref, timeframe, indicator_name, offset=0):
         """
-        Helper to fetch an indicator
-        :param epic_ref: <str> (matching an epic ref in self.epics)
-        :param timeframe: <str> (matching an candle set timeframe in the above epic)
-        :param indicator_name:
-        :param offset: <int> nb of candles backward from the last candle in candle set found
-        :return: <estrade.Acandle_set_indicator.ACandleSetIndicator> child instance
+        Getter to find a candle indicator value.
+
+        :param epic_ref: (str) (matching an epic current strategy epics)
+        :param timeframe: (str) (matching a candleset.timeframe in epic)
+        :param indicator_name: (str) (matching an existing indicator on candle_set)
+        :param offset: (int)
+        :raises:
+            - :class:`estrade.exeptions.StrategyException` : if epic not found on market
+            - :class:`estrade.exeptions.EpicException` : if no candle set with this timeframe found on this epic
+        :return:
+            - :class:`estrade.candle.Candle` instance : if candle matching this offset found
+            - None: if no candle matching this offset found or if indicator not found on candle
         """
         candle = self.get_candle(epic_ref, timeframe, offset)
         if not candle:
@@ -154,6 +183,12 @@ class Strategy(MarketOptionalMixin, RefMixin):
         return candle.indicators.get(indicator_name)
 
     def get_trades(self, **kwargs):
+        """
+        Getter to find list of strategy trades
+
+        :param kwargs: see :func:`estrade.trade_manager.TradeManager.get_trades` params
+        :return: [:class:`estrade.trade.Trade`,] list of trades
+        """
         return self.market.trade_manager.get_trades(strategy=self, **kwargs)
 
     ##################################################
@@ -161,41 +196,71 @@ class Strategy(MarketOptionalMixin, RefMixin):
     ##################################################
     def open_trade(self, **kwargs):
         """
-        Helper to add strategy on open trade
-        :param kwargs: args to open a trade (see <estrade.trade_manager.TradeManager.open_trade>)
-        :return:
+        Use this method to open a trade.
+
+        This method calls :func:`estrade.trade_manager.TradeManager.open_trade` method and inject
+        this strategy as an argument.
+
+        for example, you can open a trade in your strategy event as following ::
+
+            self.open_trade(
+                # mandatory params
+                epic=self.get_epic('MY_EPIC_CODE'),
+                quantity=5,
+                direction='SELL',
+                # optional params
+                ref='my_trade_ref',
+                stop_relative=10,
+                limit_relative=20,
+                meta={'data': 'my_data'},
+            )
+
+
+        :param kwargs: arguments to create a :class:`estrade.trade.Trade` instance
         """
         self.market.trade_manager.open_trade(strategy=self, **kwargs)
 
     def close_trade_by_ref(self, *args, **kwargs):
         """
-        Helper to add strategy in close trade call
-        :param args/kwargs: args to close a trade (see <estrade.trade_manager.TradeManager.close_trade_by_ref>)
-        :return:
+        Use this method to close a trade by its reference.
+
+        This method calls :func:`estrade.TradeManager.close_trade_by_ref` method and inject
+        this strategy as an argument.
+
+        :param kwargs: args to close a trade (see :func:`estrade.TradeManager.close_trade_by_ref`)
         """
         self.market.trade_manager.close_trade_by_ref(*args, strategy=self, **kwargs)
 
     def close_all_trades(self, *args, **kwargs):
         """
-        Helper to add strategy on close all trade call
-        :param args/kwargs: args to close all trade (see <estrade.trade_manager.TradeManager.close_all_trades>)
-        :return:
+        Use this method to close all opened trades for strategy
+
+        This method calls :func:`estrade.TradeManager.close_all_trades` method and inject
+        this strategy as an argument.
+
+        :param kwargs: args to close a trade (see :func:`estrade.TradeManager.close_all_trades`)
         """
         self.market.trade_manager.close_all_trades(*args, strategy=self, **kwargs)
 
     def close_all_buys(self, *args, **kwargs):
         """
-        Helper to close all buys for the current strategy
-        :param args/kwargs: args close all buys (see <estrade.trade_manager.TradeManager.close_all_buys>)
-        :return:
+        Use this method to close all opened buys for strategy
+
+        This method calls :func:`estrade.TradeManager.close_all_buys` method and inject
+        this strategy as an argument.
+
+        :param kwargs: args to close a trade (see :func:`estrade.TradeManager.close_all_buys`)
         """
         self.market.trade_manager.close_all_buys(*args, strategy=self, **kwargs)
 
     def close_all_sells(self, *args, **kwargs):
         """
-        Helper to close all sells for the current strategy
-        :param args/kwargs: args close all sells (see <estrade.trade_manager.TradeManager.close_all_sells>)
-        :return:
+        Use this method to close all opened sells for strategy
+
+        This method calls :func:`estrade.TradeManager.close_all_sells` method and inject
+        this strategy as an argument.
+
+        :param kwargs: args to close a trade (see :func:`estrade.TradeManager.close_all_sells`)
         """
         self.market.trade_manager.close_all_sells(*args, strategy=self, **kwargs)
 
@@ -296,7 +361,8 @@ class Strategy(MarketOptionalMixin, RefMixin):
 
     def on_new_tick_opening_strategy(self, tick):
         """
-        This method is called on every tick received from provider
+        This method is called on every tick received from provider when the number of open trades for this strategy
+        is inferior to this instance `max_concurrent_trades` value.
 
         :param estrade.Tick tick: tick instance
         :return: None
@@ -305,7 +371,8 @@ class Strategy(MarketOptionalMixin, RefMixin):
 
     def on_new_tick_closing_strategy(self, tick):
         """
-        method called to apply opening strategy for each tick where closing trade is allowed (see on_new_tick)
+        this method is called on every tick received from provider when at least one trade is
+        opened for this strategy.
 
         :param estrade.Tick tick: tick instance
         :return: None
@@ -314,7 +381,8 @@ class Strategy(MarketOptionalMixin, RefMixin):
 
     def on_new_candle_opening_strategy(self, candle_set):
         """
-        method called every time a new candle is created
+        method called every time a new candle is created when the number of opened trades for this strategy
+        is inferior to this instance `max_concurrent_trades` value.
 
         :param estrade.CandleSet candle_set: candle set instance
         :return: None
@@ -323,7 +391,8 @@ class Strategy(MarketOptionalMixin, RefMixin):
 
     def on_new_candle_closing_strategy(self, candle_set):
         """
-        method called every time a new candle is created
+        method called every time a new candle is created and at least one trade is
+        opened for this strategy.
 
         :param estrade.CandleSet candle_set: candle set instance
         :return: None
