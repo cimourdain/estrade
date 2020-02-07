@@ -1,47 +1,73 @@
+import pytest
 from datetime import datetime
 
-import arrow
-
-from tests.factories import (
-    LiveProviderFactory,
-    MarketFactory,
-    ProviderFactory
-)
+from estrade.provider import LiveProvider, Provider
+from estrade.trade import Trade
+from estrade.exceptions import ProviderException
 
 
 class TestProvider:
 
-    def test_generate_ticks(self, mocker):
-        # GIVEN a provider attached to a market
-        provider = ProviderFactory()
-        market = MarketFactory(provider=provider)
-        assert len(market.strategies) == 1
-        assert len(market.epics) == 1
-        assert len(market.epics[0].strategies) == 1
+    def test_usage_of_abstract_instance(self):
+        # WHEN I instanciate an instance of AProvider
+        provider = Provider()
 
-        # GIVEN a mocker to spy if market.on_new_tick is called
-        market_on_new_tick = mocker.spy(market, 'on_new_tick')
+        # THEN market is initated to None
+        assert provider.market is None
+        # THEN provider is logged
+        assert provider.logged
 
-        # WHEN i generate ticks from provider
-        provider.generate(ticks_dicts=[
-            {
-                'epic_ref': market.epics[0].ref,
-                'bid': 999,
-                'ask': 1000,
-                'datetime': arrow.get(datetime(year=2019, month=1, day=1, hour=0, minute=0, second=0), 'UTC'),
-            }
-        ])
-        assert market_on_new_tick.called
+        # THEN no trade is fetched when call of get_open_trades
+        assert not provider.get_open_trades()
+
+    def test_call_on_new_tick_with_no_market(self):
+        # GIVEN a provider instanciated from mixins method with no market attached
+        provider = Provider()
+
+        # WHEN i call the on_new_tick method, then an exception is raised because no market is attached
+        with pytest.raises(ProviderException):
+            provider.build_tick(epic_ref='test', bid=1000, ask=1001, datetime=datetime.now())
+
+
+class TestTradeClass:
+    @pytest.mark.parametrize(
+        'invalid_trade_class',
+        [
+            pytest.param(str, id='str trade class'),
+            pytest.param('string', id='string trade class'),
+            pytest.param({}, id='dict trade class'),
+        ]
+    )
+    def test_invalid_trade_class(self, invalid_trade_class):
+
+        with pytest.raises(ProviderException, match='Trade class .*'):
+            Provider(trade_class=invalid_trade_class)
+
+        provider = Provider()
+        with pytest.raises(ProviderException, match='Trade class .*'):
+            provider.trade_class = invalid_trade_class
+
+    def test_valid_trade_class(self):
+        class SubTradeClass(Trade):
+            pass
+
+        provider = Provider(trade_class=SubTradeClass)
+        assert provider.trade_class == SubTradeClass
+
+        provider = Provider()
+        provider.trade_class = SubTradeClass
+        assert provider.trade_class == SubTradeClass
 
 
 class TestLiveProvider:
 
-    def test_subscribe(self, mocker):
-        provider = LiveProviderFactory()
-        login_mocker = mocker.patch.object(provider, 'login', return_value=True)
-        generate_ticks_mocker = mocker.patch.object(provider, 'generate', return_value=True)
-        market = MarketFactory(provider=provider)
-        provider.logged = True
-        market.run()
-        login_mocker.assert_called_once()
-        generate_ticks_mocker.assert_called_once()
+    def test_abstract_class(self):
+        # GIVEN a live provider instanciated from mixins class
+        provider = LiveProvider()
+
+        # THEN no market is set on init
+        assert provider.market is None
+        # THEN the provider is not logged
+        assert not provider.logged
+        # THEN the list of open trades is empty
+        assert not provider.get_open_trades()

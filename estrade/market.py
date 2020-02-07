@@ -1,7 +1,7 @@
 import logging
 
 from estrade.ref_mixin import RefMixin
-from estrade.abstract.Areporting import AReporting
+from estrade.mixins.reporting_mixin import ReportingMixin
 from estrade.exceptions import MarketException
 from estrade.observer import Observable
 from estrade.strategy import Strategy
@@ -75,8 +75,8 @@ class Market(RefMixin, Observable):
         """
         logger.debug('Set a new market provider')
         # import here to prevent import loop
-        from estrade.abstract.Aprovider import AProvider
-        if not isinstance(provider, AProvider):
+        from estrade.provider import Provider
+        if not isinstance(provider, Provider):
             raise MarketException('Invalid Provider')
 
         self._provider = provider
@@ -176,7 +176,7 @@ class Market(RefMixin, Observable):
         :return:
         """
         self._reporting = None
-        if reporting and isinstance(reporting, AReporting):
+        if reporting and isinstance(reporting, ReportingMixin):
             self._reporting = reporting
             self._reporting.market = self
 

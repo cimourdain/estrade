@@ -1,8 +1,8 @@
-from estrade.abstract.Astop_limit import AStopLimit
+from estrade.mixins.stop_limit_mixin import StopLimitMixin
 from estrade.exceptions import StopLimitException
 
 
-class StopLimitAbsolute(AStopLimit):
+class StopLimitMixinAbsolute(StopLimitMixin):
     """
     Class used to manage absolute stop and limits for <estrade.trade.Trade> classes
     """
@@ -81,7 +81,7 @@ class StopLimitAbsolute(AStopLimit):
         return True
 
 
-class StopLimitRelative(AStopLimit):
+class StopLimitMixinRelative(StopLimitMixin):
     """
     This class handles relative stop/limit for trades.
     """

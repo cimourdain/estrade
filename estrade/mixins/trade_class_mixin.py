@@ -1,12 +1,12 @@
 import logging
 
-from estrade.abstract import get_exception
+from estrade.mixins import get_exception
 from estrade.trade import Trade
 
 logger = logging.getLogger(__name__)
 
 
-class ATradeClassUser:
+class TradeClassMixin:
 
     def __init__(self, trade_class=None):
         self.trade_class = trade_class

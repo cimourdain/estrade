@@ -1,12 +1,12 @@
 import logging
 
-from estrade.abstract.Areporting import AReporting
+from estrade.mixins.reporting_mixin import ReportingMixin
 from estrade.utils.csv import CSVWriter
 
 logger = logging.getLogger(__name__)
 
 
-class ReportingCSV(AReporting):
+class ReportingMixinCSV(ReportingMixin):
 
     @property
     def base_path(self):

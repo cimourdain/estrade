@@ -7,7 +7,7 @@ from estrade.exceptions import ReportingException
 logger = logging.getLogger(__name__)
 
 
-class AReporting(MarketOptionalMixin):
+class ReportingMixin(MarketOptionalMixin):
     """
     Define Reporting Abstract class.
     A reporting class is able to generate reporting:
@@ -34,17 +34,17 @@ class AReporting(MarketOptionalMixin):
         if not self.market:
             raise ReportingException('cannot subscribe Reporting when no market set')
 
-        if self.on_new_tick != AReporting.on_new_tick:
+        if self.on_new_tick != ReportingMixin.on_new_tick:
             logger.info('subscribe Reporting %s to on_new_tick events' % self.__class__.__name__)
             for epic in self.market.epics:
                 self.market.subscribe('market_after_on_new_tick_{}'.format(epic.ref), self.on_new_tick)
 
-        if self.on_trade_update != AReporting.on_trade_update:
+        if self.on_trade_update != ReportingMixin.on_trade_update:
             # TODO: implement events in trade_manager
             logger.info('subscribe Reporting %s to on_trade_update events' % self.__class__.__name__)
             self.market.trade_manager.subscribe('trade_update', self.on_trade_update)
 
-        if self.on_run_end != AReporting.on_run_end:
+        if self.on_run_end != ReportingMixin.on_run_end:
             logger.info('subscribe Reporting %s to on_new_tick events' % self.__class__.__name__)
             self.market.trade_manager.subscribe('market_run_end', self.on_run_end)
 

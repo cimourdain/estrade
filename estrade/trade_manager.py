@@ -1,14 +1,14 @@
 import logging
 
 from estrade.market_mixin import MarketMandatoryMixin
-from estrade.abstract.Atrade_class import ATradeClassUser
+from estrade.mixins.trade_class_mixin import TradeClassMixin
 from estrade.exceptions import TradeManagerException
 from estrade.observer import Observable
 
 logger = logging.getLogger(__name__)
 
 
-class TradeManager(MarketMandatoryMixin, ATradeClassUser, Observable):
+class TradeManager(MarketMandatoryMixin, TradeClassMixin, Observable):
     """
     A trade manager handle a list of trades.
     """
@@ -28,7 +28,7 @@ class TradeManager(MarketMandatoryMixin, ATradeClassUser, Observable):
         MarketMandatoryMixin.__init__(self, market)
 
         # init trade_manager with the default trade class <estrade.trade.Trade>
-        ATradeClassUser.__init__(self, trade_class=None)
+        TradeClassMixin.__init__(self, trade_class=None)
 
         # set trade manager as observable so it can fire events
         Observable.__init__(self)

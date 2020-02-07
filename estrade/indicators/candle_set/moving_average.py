@@ -1,15 +1,15 @@
-from estrade.abstract.Acandle_set_indicator import AbstractCandleSetIndicator
+from estrade.mixins.candle_set_indicator_mixin import CandleSetIndicatorMixin
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-class AbstractMovingAverage(AbstractCandleSetIndicator):
+class MovingAverageMixin(CandleSetIndicatorMixin):
     def __init__(self, periods, *args, **kwargs):
         self.periods = periods
         self.sum_finished = 0
         self._sma = None
-        AbstractCandleSetIndicator.__init__(self, *args, **kwargs)
+        CandleSetIndicatorMixin.__init__(self, *args, **kwargs)
 
     def _post_on_new_tick(self, tick):
         pass
@@ -39,20 +39,20 @@ class AbstractMovingAverage(AbstractCandleSetIndicator):
         self._post_candle_close(closed_candle)
 
 
-class SimpleMovingAverage(AbstractMovingAverage):
+class SimpleMovingAverage(MovingAverageMixin):
 
     @property
     def value(self):
         return round(self._sma, 2) if self._sma else None
 
 
-class ExponentialMovingAverage(AbstractMovingAverage):
+class ExponentialMovingAverage(MovingAverageMixin):
 
     def __init__(self, periods, *args, **kwargs):
         self._ema = None
         self.shooting_constant = 2 / (periods + 1)
         self.last_candle_sma = None
-        AbstractMovingAverage.__init__(self, *args, periods=periods, **kwargs)
+        MovingAverageMixin.__init__(self, *args, periods=periods, **kwargs)
 
     @property
     def value(self):

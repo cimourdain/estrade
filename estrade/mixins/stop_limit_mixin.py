@@ -5,7 +5,7 @@ from estrade.exceptions import StopLimitException
 logger = logging.getLogger(__name__)
 
 
-class AStopLimit:
+class StopLimitMixin:
 
     def __init__(self, type_, trade, value):
         """

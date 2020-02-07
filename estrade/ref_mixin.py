@@ -1,6 +1,6 @@
 import uuid
 
-from estrade.abstract import get_exception
+from estrade.mixins import get_exception
 
 
 class RefMixin:

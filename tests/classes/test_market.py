@@ -9,7 +9,7 @@ from tests.factories import (
     LiveProviderFactory,
     MarketFactory,
     ProviderFactory,
-    ReportingFactory,
+    ReportingMixinFactory,
     StrategyFactory,
     TickFactory,
 )
@@ -93,7 +93,7 @@ class TestReporting:
         market = MarketFactory()
         assert not market.reporting
 
-        market = MarketFactory(reporting=ReportingFactory())
+        market = MarketFactory(reporting=ReportingMixinFactory())
         assert market.reporting
 
 

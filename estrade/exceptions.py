@@ -22,7 +22,7 @@ class CandleException(EstradeException):
     message_prefix = 'Candle'
 
 
-class AProviderException(EstradeException):
+class ProviderException(EstradeException):
     message_prefix = 'Provider'
 
 

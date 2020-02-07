@@ -1,12 +1,12 @@
 import pytest
 
-from estrade.abstract.Acandle_set_indicator import AbstractCandleSetIndicator
+from estrade.mixins.candle_set_indicator_mixin import CandleSetIndicatorMixin
 
 
 class TestAbstractCandleSetIndicator:
 
     def test_abstract_instanciation(self):
-        ainstance = AbstractCandleSetIndicator()
+        ainstance = CandleSetIndicatorMixin()
 
         with pytest.raises(NotImplementedError):
             ainstance.on_new_tick(tick=None)

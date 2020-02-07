@@ -5,7 +5,7 @@ import arrow
 from sqlalchemy import func
 
 from estrade.exceptions import AProviderException
-from estrade.abstract.Aprovider import AProvider
+from estrade.provider import AProvider
 from samples.providers.database.models.tick import Tick
 
 

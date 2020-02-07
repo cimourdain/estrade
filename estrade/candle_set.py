@@ -4,7 +4,7 @@ import logging
 import re
 from datetime import timedelta
 
-from estrade.abstract.Acandle_set_indicator import AbstractCandleSetIndicator
+from estrade.mixins.candle_set_indicator_mixin import CandleSetIndicatorMixin
 from estrade.candle import Candle
 from estrade.exceptions import CandleSetException
 from estrade.observer import Observable
@@ -250,7 +250,7 @@ class CandleSet(Observable):
                 raise CandleSetException('Indicators must be a list')
 
             for indicator in indicators:
-                if not isinstance(indicator, AbstractCandleSetIndicator):
+                if not isinstance(indicator, CandleSetIndicatorMixin):
                     raise CandleSetException('Indicators must be instances of '
                                              'estrade.Acandle_set_indicator.AbstractCandleSetIndicator')
                 logger.debug('add indicator %s' % indicator.name)

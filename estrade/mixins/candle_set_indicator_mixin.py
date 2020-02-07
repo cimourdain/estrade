@@ -3,7 +3,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class AbstractCandleSetIndicator:
+class CandleSetIndicatorMixin:
 
     def __init__(self, name=None):
         self.candle_set = None

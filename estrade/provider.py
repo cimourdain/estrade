@@ -1,15 +1,15 @@
 import logging
 
-from estrade.exceptions import AProviderException
+from estrade.exceptions import ProviderException
 from estrade.market_mixin import MarketOptionalMixin
-from estrade.abstract.Atrade_class import ATradeClassUser
+from estrade.mixins.trade_class_mixin import TradeClassMixin
 from estrade.candle import Candle
 from estrade.tick import Tick
 
 logger = logging.getLogger(__name__)
 
 
-class AProvider(MarketOptionalMixin, ATradeClassUser):
+class Provider(MarketOptionalMixin, TradeClassMixin):
     """
     A provider defines how to fetch data to run your strategies.
 
@@ -22,19 +22,19 @@ class AProvider(MarketOptionalMixin, ATradeClassUser):
     def __init__(self, trade_class=None):
         """
         Init a new provider
-        :param: trade_class: instance of :class:`estrade.abstract.ATrade_class.ATradeClassUser`
+        :param: trade_class: instance of :class:`estrade.mixins.ATrade_class.ATradeClassUser`
 
         """
         # init a market property to None
         MarketOptionalMixin.__init__(self, None)
-        ATradeClassUser.__init__(self, trade_class=trade_class)
+        TradeClassMixin.__init__(self, trade_class=trade_class)
 
         # the default provider is automatically logged
         self.logged = True
 
     def build_tick(self, epic_ref, datetime, bid, ask, **kwargs):
         if not self.market:
-            raise AProviderException('Cannot build tick when provider has no market')
+            raise ProviderException('Cannot build tick when provider has no market')
 
         return Tick(
             epic=self.market.get_epic(epic_ref),
@@ -68,7 +68,7 @@ class AProvider(MarketOptionalMixin, ATradeClassUser):
 
         Tick mode:
             If your provider generates ticks: this method must :
-                1. Build a :class:`estrade.Tick` calling :func:`~estrade.abstract.Aprovider.AProvider.build_tick` method.
+                1. Build a :class:`estrade.Tick` calling :func:`~estrade.mixins.Aprovider.AProvider.build_tick` method.
                 2. Send the tick to market calling :func:`estrade.market.Market.on_new_tick` method
 
             eg::
@@ -102,7 +102,7 @@ class AProvider(MarketOptionalMixin, ATradeClassUser):
         :return:
 
         """
-        raise NotImplementedError('Implement this method to generate ticks.')
+        pass
 
     def get_open_trades(self):
         """
@@ -112,7 +112,7 @@ class AProvider(MarketOptionalMixin, ATradeClassUser):
         return []
 
 
-class ALiveProvider(AProvider, MarketOptionalMixin):
+class LiveProvider(Provider, MarketOptionalMixin):
     """
     A LiveProvider is a Provider with a template for :
         - login
@@ -121,7 +121,7 @@ class ALiveProvider(AProvider, MarketOptionalMixin):
     Use this class as a parent for API providers.
     """
     def __init__(self, *args, **kwargs):
-        AProvider.__init__(self, *args, **kwargs)
+        Provider.__init__(self, *args, **kwargs)
         self.logged = False
 
     def subscribe(self):
@@ -150,7 +150,7 @@ class ALiveProvider(AProvider, MarketOptionalMixin):
         If login is successful, the instance `logged` attribute must be set to True.
         :return:
         """
-        raise NotImplementedError('Login method must be implemented in a LiveProvider')
+        pass
 
     ##################################################
     # EPIC

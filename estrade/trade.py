@@ -5,7 +5,7 @@ import logging
 from estrade.ref_mixin import RefMixin
 from estrade.exceptions import TradeException
 from estrade.observer import Observable
-from estrade.stop_limit import StopLimitAbsolute, StopLimitRelative
+from estrade.stop_limit import StopLimitMixinAbsolute, StopLimitMixinRelative
 from estrade.strategy import Strategy
 from estrade.tick import Tick
 
@@ -270,14 +270,14 @@ class Trade(RefMixin, Observable):
 
         if relative:
             # set stop/limit as relative
-            return StopLimitRelative(
+            return StopLimitMixinRelative(
                 type_=type_,
                 trade=self,
                 value=value,
             )
 
         # set stop/limit as an absolute stop
-        return StopLimitAbsolute(
+        return StopLimitMixinAbsolute(
             type_=type_.lower(),
             trade=self,
             value=value

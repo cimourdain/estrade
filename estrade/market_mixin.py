@@ -1,10 +1,10 @@
-"""This file define abstract classes used as parent of other classes to define recurrent attributes get/set.
+"""This file define mixins classes used as parent of other classes to define recurrent attributes get/set.
 Eg. market, ref
 """
 
 import logging
 
-from estrade.abstract import get_exception
+from estrade.mixins import get_exception
 
 logger = logging.getLogger(__name__)
 

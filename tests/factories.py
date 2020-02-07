@@ -4,16 +4,16 @@ import arrow
 import factory
 from faker import Faker
 
-from estrade.abstract.Acandle_set_indicator import AbstractCandleSetIndicator
+from estrade.mixins.candle_set_indicator_mixin import CandleSetIndicatorMixin
 from estrade.candle import Candle
-from estrade.stop_limit import StopLimitAbsolute, StopLimitRelative
+from estrade.stop_limit import StopLimitMixinAbsolute, StopLimitMixinRelative
 from estrade.trade import Trade
 from estrade.trade_manager import TradeManager
 from estrade import CandleSet
 from estrade.epic import Epic
 from estrade import Market
-from estrade.abstract.Aprovider import ALiveProvider, AProvider
-from estrade import AReporting
+from estrade.provider import LiveProvider, Provider
+from estrade import ReportingMixin
 from estrade import Strategy
 from estrade import Tick
 from estrade import ExponentialMovingAverage, SimpleMovingAverage
@@ -21,7 +21,7 @@ from estrade import ExponentialMovingAverage, SimpleMovingAverage
 fake = Faker()
 
 
-class ProviderFactory(AProvider):
+class ProviderFactory(Provider):
 
     def generate(self, ticks_dicts):
         for tick in ticks_dicts:
@@ -35,10 +35,7 @@ class ProviderFactory(AProvider):
             )
 
 
-class LiveProviderFactory(ALiveProvider):
-
-    def generate_ticks(self):
-        pass
+class LiveProviderFactory(LiveProvider):
 
     def login(self):
         self.logged = True
@@ -57,7 +54,7 @@ class CandleSetFactory(factory.Factory):
     timeframe = '1minutes'
 
 
-class CandleSetIndicator(AbstractCandleSetIndicator):
+class CandleSetIndicatorMixin(CandleSetIndicatorMixin):
 
     def on_new_tick(self, tick):
         pass
@@ -71,7 +68,7 @@ class CandleSetIndicator(AbstractCandleSetIndicator):
 
 class CandleSetIndicatorFactory(factory.Factory):
     class Meta:
-        model = CandleSetIndicator
+        model = CandleSetIndicatorMixin
 
     name = 'test indicator'
 
@@ -155,7 +152,7 @@ class TradeFactory(factory.Factory):
 
 class StopLimitAbsoluteFactory(factory.Factory):
     class Meta:
-        model = StopLimitAbsolute
+        model = StopLimitMixinAbsolute
 
     type_ = 'STOP'
     trade = TradeFactory()
@@ -164,14 +161,14 @@ class StopLimitAbsoluteFactory(factory.Factory):
 
 class StopLimitRelativeFactory(factory.Factory):
     class Meta:
-        model = StopLimitRelative
+        model = StopLimitMixinRelative
 
     type_ = 'STOP'
     trade = TradeFactory()
     value = 10
 
 
-class ReportingFactory(AReporting):
+class ReportingMixinFactory(ReportingMixin):
 
     def on_new_tick(self, tick):
         pass
