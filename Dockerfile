@@ -14,6 +14,7 @@ ENV PATH "$PATH:/root/.pyenv/versions/3.8.1/bin/:/root/.local/bin"
 RUN pipx ensurepath
 
 # Python tools
+RUN pipx install poetry
 RUN pipx install tox
 RUN pipx install flake8
 

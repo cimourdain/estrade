@@ -1,6 +1,0 @@
-arrow
-marshmallow>3
-python-dateutil
-pytz
-pyYAML
-requests
