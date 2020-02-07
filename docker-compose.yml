@@ -1,0 +1,12 @@
+version: "3.7"
+
+services:
+  estrade:
+    build:
+      context: .
+    volumes:
+        - ${PWD}:/estrade
+        - virtualenv_cache:/root/.cache
+
+volumes:
+  virtualenv_cache:

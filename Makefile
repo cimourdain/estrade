@@ -4,34 +4,12 @@ VENV_ACTIVATE=. $(VENV_NAME)/bin/activate
 PYTHON_PATH=/usr/bin/python3.6
 PYTHON_EXE=python3
 
+DOCKER_RUN = docker-compose run --rm estrade
 
-
-install: 
-	( \
-		rm -rf $(VENV_NAME)/; \
-		$(PYTHON_EXE) -m virtualenv $(VENV_NAME) -p $(PYTHON_PATH); \
-		$(VENV_ACTIVATE); \
-		echo "${VIRTUAL_ENV}"; \
-		pip list; \
-		pip install -r requirements.txt; \
-		pip list; \
-		deactivate; \
-	)
-
-install-dev: install
-	( \
-		$(VENV_ACTIVATE); \
-		pip install -r requirements-dev.txt; \
-		pip list; \
-		deactivate; \
-	)
 
 test: 
-	( \
-		$(VENV_ACTIVATE); \
-		pytest tests/ -x --log-level=DEBUG; \
-		deactivate; \
-	)
+	$(DOCKER_RUN) tox --recreate
+
 
 test-cov:
 	( \
@@ -41,8 +19,4 @@ test-cov:
 	)
 
 lint:
-	( \
-		$(VENV_ACTIVATE); \
-		flake8  --max-line-length 120 estrade/ ; \
-		deactivate; \
-	)
+	$(DOCKER_RUN) flake8  --max-line-length 120 estrade
