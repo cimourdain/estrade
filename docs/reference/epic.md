@@ -1,4 +1,6 @@
 # Epic
 
-::: estrade.Epic
+## Epic Class
+
+::: estrade.epic.Epic
 

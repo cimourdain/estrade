@@ -1,0 +1,39 @@
+#!/bin/bash
+
+stop_running_containers() {
+	local name_pattern=${1}
+	local running_containers=$(docker container ls -q --filter name=${name_pattern})
+	if [ ! -z "${running_containers}" ];then
+		echo "Running containers: ${running_containers}"
+		docker stop ${running_containers}
+	else
+		echo "no running container"
+	fi
+}
+
+remove_containers() {
+	local name_pattern=${1}
+	local containers=$(docker container ls -q -a --filter name=${name_pattern})
+	if [ ! -z "${containers}" ];then
+		echo "containers to rm: ${containers}"
+		docker rm ${containers}
+	else
+		echo "no container to delete"
+	fi
+}
+
+clean_images() {
+	local name_pattern=${1}
+	local images_str=$(docker images -a | grep ${name_pattern})
+	if [ ! -z "${images_str}" ];then
+		local images_ids=$(echo ${images_str} | awk '{print $3}')
+		echo "delete images: ${images_ids}"
+		docker rmi ${images_ids}
+		docker image prune -f
+	else
+		echo "no image to delete"
+	fi
+
+}
+
+"$@"

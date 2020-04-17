@@ -1,26 +1,17 @@
-version: "2.1"
+version: "2.3"
 
 services:
-  estrade:
-    build:
-      context: .
-    volumes:
-     - ${PWD}:/estrade
-  estrade-py36:
-    extends:
-      service: estrade
-    build:
-      args:
-        image_name: "3.6.10-stretch"
-  estrade-py37:
-    extends:
-      service: estrade
-    build:
-      args:
-        image_name: "3.7.6-stretch"
-  estrade-py38:
-    extends:
-      service: estrade
-    build:
-      args:
-        image_name: "3.8.2-buster"
+    development:
+        # FIXME use the PROJECT_DIRECTORY env var
+        environment:
+           - PYTHONPATH=/home/${PROJECT_NAME}/app/
+           - BRANCH_NAME=${BRANCH_NAME}
+        image: ${PROJECT_NAME}/dev:${PYVERSION}
+        user: ${PROJECT_NAME}
+        working_dir: /home/${PROJECT_NAME}/app/
+        container_name: ${PROJECT_NAME}-dev-${PYVERSION}
+        command: bash -c "poetry install"
+        ports:
+            - "8000:8000"
+        volumes:
+            - ${PWD}/:/home/${PROJECT_NAME}/app/

@@ -1,4 +1,0 @@
-# Provider
-
-::: estrade.Provider
-

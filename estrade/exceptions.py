@@ -1,50 +1,42 @@
 class EstradeException(Exception):
-    message_prefix = ''
+    message_prefix = ""
 
     def __init__(self, message, *args, **kwargs):
-        message = f'Estrade::{self.message_prefix}::{message}'
-        super().__init__(message, *args, **kwargs)
+        message = f"Estrade::{self.message_prefix}::{message}"
+        Exception.__init__(self, message, *args, **kwargs)
 
 
-class MarketException(EstradeException):
-    message_prefix = 'Market'
+class BaseIndicatorException(EstradeException):
+    message_prefix = "BaseIndicator"
 
 
 class EpicException(EstradeException):
-    message_prefix = 'Epic'
-
-
-class CandleSetException(EstradeException):
-    message_prefix = 'CandleSet'
-
-
-class CandleException(EstradeException):
-    message_prefix = 'Candle'
-
-
-class ProviderException(EstradeException):
-    message_prefix = 'Provider'
-
-
-class ReportingException(EstradeException):
-    message_prefix = 'Reporting'
-
-
-class StopLimitException(EstradeException):
-    message_prefix = 'StopLimit'
-
-
-class StrategyException(EstradeException):
-    message_prefix = 'Strategy'
+    message_prefix = "Epic"
 
 
 class TickException(EstradeException):
-    message_prefix = 'Tick'
+    message_prefix = "Tick"
 
 
 class TradeManagerException(EstradeException):
-    message_prefix = 'TradeManager'
+    message_prefix = "TradeManager"
 
 
 class TradeException(EstradeException):
-    message_prefix = 'Trade'
+    message_prefix = "Trade"
+
+
+class TimeException(EstradeException):
+    message_prefix = "TimedObject"
+
+
+class TradeProviderException(EstradeException):
+    message_prefix = "TradeProvider"
+
+
+class FrameSetException(EstradeException):
+    message_prefix = "FrameSet"
+
+
+class TimeFrameException(EstradeException):
+    message_prefix = "TimeFrame"

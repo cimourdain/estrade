@@ -1,120 +1,178 @@
-import arrow
-from datetime import datetime
+import logging
+from datetime import datetime as pydatetime
 from typing import Any, Dict, Optional, Union
 
+import arrow  # type: ignore
+
 from estrade.exceptions import TickException
-from estrade.epic import Epic
+from estrade.mixins import MetaMixin, TimedMixin
 
 
-class Tick:
-    """
-    Class designed to manage a tick (market point value)
+logger = logging.getLogger(__name__)
 
-    Arguments:
-        epic: epic instance
-        datetime: tick datetime
-        bid: tick bid value
-        ask: tick ask value
-        meta: free dictionary where you can store anything you need
 
+class Tick(MetaMixin, TimedMixin):
+    """Market value at a given time representation.
+
+    A [`Tick`][estrade.tick.Tick] represents the market value of a financial instrument
+    at a given time.
+
+    Attributes:
+        bid (float): bid value
+        ask (float): ask value
+
+        datetime (arrow.Arrow): datetime of open
+            (see `estrade.mixins.timed.TimedMixin`)
+        meta (Dict[str, Any]): Dictionary free of use
+            (see `estrade.mixins.meta.MetaMixin`)
     """
 
     def __init__(
         self,
-        epic: 'Epic',
-        datetime: Union[datetime, arrow.Arrow],
+        datetime: Union[pydatetime, arrow.Arrow],
         bid: Union[float, int],
         ask: Union[float, int],
-        meta: Optional[Dict[str, Any]] = None,
-    ):
+        meta: Optional[Dict[Any, Any]] = None,
+    ) -> None:
+        """
+        Instantiate a new tick object.
 
-        # check epic
-        if not isinstance(epic, Epic):
-            raise TickException('Invalid tick epic')
-        self.epic = epic
+        Arguments:
+            datetime: timezoned datetime
+            bid: tick bid value
+            ask: tick ask value
+            meta: free dictionary where you can store anything you need
 
-        # check datetime
-        if not hasattr(datetime, 'tzinfo') or datetime.tzinfo is None:
-            raise TickException('Invalid tick datetime')
-        self._datetime = arrow.get(datetime).to(self.epic.timezone)
+        !!! note
+            The Tick instance can be created with either a python datetime or an
+            [`Arrow`](https://arrow.readthedocs.io/) datetime.
+            ```python
+            --8<-- "tests/doc/reference/tick/test_datetime.py"
+            ```
+        """
+        TimedMixin.__init__(self, datetime)
+        self.ask = ask
+        self.bid = bid
+        if self.bid > self.ask:
+            raise TickException(f"Tick bid {bid} cannot be superior to ask {ask}")
+        MetaMixin.__init__(self, meta)
 
-        # check bid/ask
-        if not isinstance(ask, (int, float)):
-            raise TickException('Invalid ask value')
-        if not isinstance(bid, (int, float)):
-            raise TickException('Invalid bid value')
-        if bid > ask:
-            raise TickException('Inconsistent bid/ask values.')
-        self.ask = float(ask)
-        self.bid = float(bid)
+        # add tick to epic
+        logger.debug(f"New tick : {self}")
 
-        self.meta = meta
+    @staticmethod
+    def check_value(v: Any) -> bool:
+        """
+        Check if bid/ask values are in either float or int.
+
+        Returns:
+            Is the bid/ask value of the correct type.
+        """
+        if not isinstance(v, (int, float)):
+            return False
+        return True
 
     @property
-    def spread(self):
+    def ask(self) -> float:
         """
-        The spread is the difference between bid and ask
+        Return the current instance ask.
 
-        :return: (float) spread value
+        Returns:
+            tick ask value.
+        """
+        return self._ask
+
+    @ask.setter
+    def ask(self, ask: Union[int, float]) -> None:
+        if not Tick.check_value(ask):
+            raise TickException(f"invalid ask value: {ask}")
+        self._ask = float(ask)
+
+    @property
+    def bid(self) -> float:
+        """
+        Return the current instance bid.
+
+        Returns:
+            tick bid value.
+        """
+        return self._bid
+
+    @bid.setter
+    def bid(self, bid: Union[int, float]) -> None:
+        if not Tick.check_value(bid):
+            raise TickException(f"invalid bid value: {bid}")
+        self._bid = float(bid)
+
+    @property
+    def spread(self) -> float:
+        """
+        Return the difference between bid and ask.
+
+        !!! example
+            ```python
+            --8<-- "tests/doc/reference/tick/test_spread.py"
+            ```
+
+        Returns:
+            spread value
         """
         return round(self.ask - self.bid, 2)
 
     @property
-    def value(self):
+    def value(self) -> float:
         """
-        The tick value is the value exactly in the middle between bid and ask
+        Return value in the middle between bid and ask.
 
-        :return: (float) spread value
+        !!! example
+            ```python
+            --8<-- "tests/doc/reference/tick/test_value.py"
+            ```
+
+        Returns:
+            median value between bid and ask
         """
         return round(self.bid + (self.spread / 2), 2)
 
-    @property
-    def datetime(self) -> arrow.Arrow:
-        """
-        Returns:
-            Tick datetime
-        """
-        return self._datetime
-
-    @property
-    def datetime_utc(self) -> arrow.Arrow:
-        """
-        Return datetime as UTC, this method is useful when your tick datetime
-        is zoned.
-
-        :return: (`arrow.Arrow`): tick datetime zoned to UTC
-        """
-        return self._datetime.to('UTC')
-
     def __str__(self) -> str:
         """
-        String representation of tick (mainly used for logging)
-        :return:
+        Return current instance as string.
+
+        !!! example
+            ```python
+            --8<-- "tests/doc/reference/tick/test_str.py"
+            ```
+
+        Returns:
+            String representation of tick (mainly used for logging)
         """
         return (
-            f'@{self._datetime}: {self.value} '
-            f'(bid: {self.bid}, ask: {self.ask}, spread: {self.spread})'
+            f"{self.datetime.strftime('%Y-%m-%d %H:%M:%S')} : {self.value} "
+            f"(bid: {self.bid}, ask: {self.ask}, spread: {self.spread})"
         )
 
-    def to_json(self, datetime_to_str: bool = False) -> Dict[str, Any]:
+    def asdict(self, datetime_to_str: bool = False) -> Dict[str, Any]:
         """
-        Convert tick to dictionary (mainly used for reporting)
-        :param datetime_to_str: <bool> => does the datetime value in dict must convert
-        datetime to string?
-        :return:
+        Convert Tick to dictionary (mainly used for reporting).
+
+        Arguments:
+            datetime_to_str: convert the tick datetime to string?
+
+        Returns:
+            tick as dictionary containing
+
+        !!! example
+            ```python
+            --8<-- "tests/doc/reference/tick/test_asdict.py"
+            ```
+
         """
         return {
-            'datetime': self._datetime.strftime('%Y-%m-%d %H:%M:%S')
+            "datetime": self.datetime.strftime("%Y-%m-%d %H:%M:%S")
             if datetime_to_str
-            else self._datetime,
-            'bid': self.bid,
-            'ask': self.ask,
-            'spread': self.spread,
-            'value': self.value,
+            else self.datetime,
+            "bid": self.bid,
+            "ask": self.ask,
+            "spread": self.spread,
+            "value": self.value,
         }
-
-    @staticmethod
-    def validate(tick: 'Tick') -> bool:
-        if not isinstance(tick, Tick):
-            raise TickException('Invalid tick instance')
-        return True

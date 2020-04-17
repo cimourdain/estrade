@@ -1,3 +1,0 @@
-# Candle
-
-::: estrade.candle.Candle

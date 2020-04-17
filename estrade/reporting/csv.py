@@ -1,51 +1,105 @@
+import csv
 import logging
+import os
+from typing import List, TYPE_CHECKING
 
-from estrade.mixins.reporting_mixin import ReportingMixin
-from estrade.utils.csv import CSVWriter
+import arrow  # type: ignore
+
+
+if TYPE_CHECKING:  # pragma: no cover
+    from estrade import BaseStrategy
 
 logger = logging.getLogger(__name__)
 
 
-class ReportingCSV(ReportingMixin):
-    @property
-    def base_path(self):
-        return self.market.ref
+class CSVWriter:
+    @staticmethod
+    def open_file(path, filename):
+        open_mode = "a"
+        if not os.path.exists(path):
+            os.makedirs(path)
 
-    def strategy_path(self, strategy):
-        return f'{self.market.ref}/{strategy.ref}/'
+        file_path = f"{path}/{filename}"
+        file_exists = True
+        if not os.path.isfile(file_path):
+            open_mode = "w+"
+            file_exists = False
 
-    def on_new_tick(self, tick):
-        pass
+        return file_exists, open(file_path, open_mode, newline="")
 
-    def on_trade_update(self, trade):
-        pass
+    @staticmethod
+    def dict_to_csv(path, filename, dict_list, headers):
+        file_exists, f = CSVWriter.open_file(path, filename)
+        with f:
+            writer = csv.DictWriter(f, fieldnames=headers)
+            if not file_exists:
+                writer.writeheader()
+                for d in dict_list:
+                    writer.writerow(d)
 
-    def on_run_end(self):
-        logger.info('Report as CSV')
-        strategies_dicts = []
-        for strategy in self.market.strategies:
-            strategies_dicts.append(strategy.to_json)
 
-            strategy_trades_dict = []
-            headers = []
-            for trade in self.market.trade_manager.get_trades(strategy=strategy):
-                strategy_trades_dict.append(trade.to_json)
-                if not headers:
-                    headers = trade.json_headers
+class ReportingCSV:
+    def __init__(self, target_folder: str = "reports") -> None:
+        """
+        Create a reporting instance.
 
-            consolidated_report_file = 'consolidated_trades.csv'
-            CSVWriter.dict_to_csv(
-                path=self.strategy_path(strategy),
-                filename=consolidated_report_file,
-                dict_list=strategy_trades_dict,
-                headers=headers,
+        Arguments:
+            target_folder: relative target folder.
+
+        """
+        self.target_folder = target_folder
+
+    def report(
+        self, strategies: List["BaseStrategy"], trade_details: bool = True
+    ) -> None:
+        """
+        Create a CSV reporting all trades of an Epic instance.
+
+        This method creates:
+
+            - A CSV file with input strategy result
+            - (Optionally) A CSV file per strategy with the detailed list of trades.
+
+        Arguments:
+            strategies: List of strategies to report.
+            trade_details: create files with the detailed list of trades of each
+                strategy.
+
+        """
+        logger.info("Report as CSV")
+        dt = arrow.utcnow().format("YYYY-MM-DD_HH:mm:ss")
+
+        strategies_report = []
+        for strategy in strategies:
+            strategy_trades = list(strategy.get_trades())
+            strategies_report.append(
+                {
+                    "ref": strategy.ref,
+                    "nb_trades": len(strategy_trades),
+                    "result": strategy.result(),
+                    "profit_factor": strategy.profit_factor(),
+                }
             )
+            if trade_details:
+                target_filename = f"{dt}_{strategy.ref}_trades.csv"
+                trades = []
+                headers: List[str] = []
+                for trade in strategy_trades:
+                    trade_dict = trade.asdict()
+                    if not headers:
+                        headers = list(trade_dict.keys())
+                    trades.append(trade_dict)
+
+                CSVWriter.dict_to_csv(
+                    path=self.target_folder,
+                    filename=target_filename,
+                    dict_list=trades,
+                    headers=headers,
+                )
 
         CSVWriter.dict_to_csv(
-            path=self.base_path,
-            filename='strategies_report.csv',
-            dict_list=strategies_dicts,
-            headers=self.market.strategies[0].json_headers,
+            path=self.target_folder,
+            filename=f"{dt}_strategies.csv",
+            dict_list=strategies_report,
+            headers=["ref", "nb_trades", "result", "profit_factor"],
         )
-        logger.info('Reporting file was writen in %s' % self.base_path)
-        print(strategies_dicts)

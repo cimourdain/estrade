@@ -1,4 +1,5 @@
 __pycache__
+.vim
 
 #### virtualenv
 venv/*
@@ -17,7 +18,7 @@ dist/*
 
 #### sample testing
 data/*
-reports/*
+reports/
 errors.log
 samples/providers/database/migration.py
 
@@ -30,6 +31,7 @@ _build/*
 ### pytest
 htmlcov/*
 .coverage
+.coveragerc
 htmlcov/
 
 # mypy

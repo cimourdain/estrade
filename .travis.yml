@@ -1,16 +1,28 @@
 language: python
 
 env:
-  - PYVERSION=py36
-  - PYVERSION=py37
-  - PYVERSION=py38
+  global:
+    - DOCKER_COMPOSE_VERSION=1.25.5
+  jobs:
+    - PYVERSION=3.6.10
+    - PYVERSION=3.7.8
+    - PYVERSION=3.8.3
 
 services:
   - docker
+
 before_install:
-  - curl -L "https://github.com/docker/compose/releases/download/1.25.3/docker-compose-$(uname -s)-$(uname -m)" -o ./docker-compose
-  - chmod +x ./docker-compose
+  - sudo rm /usr/local/bin/docker-compose
+  - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
+  - chmod +x docker-compose
   - sudo mv docker-compose /usr/local/bin
-# command to install dependencies
+# before_install:
+#   - curl -L "https://github.com/docker/compose/releases/download/1.25.3/docker-compose-$(uname -s)-$(uname -m)" -o ./docker-compose
+#   - chmod +x ./docker-compose
+#   - sudo mv docker-compose /usr/local/bin
+
+install:
+  - make init
+
 script:
   - make ci

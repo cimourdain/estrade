@@ -1,542 +1,451 @@
-""" This module define the Trade class used to manage positions.
-"""
 import logging
-from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
+from datetime import datetime as pydatetime
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
-from estrade.mixins.ref_mixin import RefMixin
+import arrow  # type: ignore
+
+from estrade.enums import TradeDirection, TransactionStatus
 from estrade.exceptions import TradeException
-from estrade.observer import Observable
-from estrade.stop_limit import StopLimitMixinAbsolute, StopLimitMixinRelative
-from estrade.tick import Tick
+from estrade.mixins import MetaMixin, RefMixin, TimedMixin, TransactionMixin
 
-if TYPE_CHECKING:
-    from estrade.epic import Epic
-    from estrade.strategy import Strategy
-    from estrade.trade_manager import TradeManager
+
+if TYPE_CHECKING:  # pragma: no cover
+    from estrade import Epic, BaseStrategy, Tick
 
 
 logger = logging.getLogger(__name__)
 
 
-class TradeClose:
+class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
     """
-    Manage a trade close
+    Trade object representation.
 
-    Arguments:
-        tick: tick to close trade with
-        quantity: quantity to close on trade
-        result: result of trade close
-        reason: reason for closing
-    """
+    Attributes:
+        epic (estrade.epic.Epic): epic of this trade
+        strategy (estrade.strategy.BaseStrategy): strategy that generated this trade
+        direction (estrade.enums.TradeDirection): direction of this trade
+        open_quantity (int): Quantities opened on trade initialisation.
+        closes (List[estrade.trade.TradeClose]): List of closes of this trade.
+        open_value (float): open tick value of the current instance
+        current_close_value (float): current market value to close this trade.
+        max_result (float): max result of this instance
+        min_result (float): min result of this instance
 
-    def __init__(self, tick: Tick, quantity: int, result: float, reason: str) -> None:
-        self.tick = tick
-        self.quantity = quantity
-        self.result = result
-        self.reason = reason
-
-    def to_json(self) -> Dict[str, Any]:
-        """
-        Convert trade close to dict (mainly used for reporting)
-
-        Returns:
-            dictionary formatted close
-        """
-        return {
-            'tick': self.tick.to_json(True),
-            'quantity': self.quantity,
-            'reason': self.reason,
-            'result': self.result,
-        }
-
-
-class Trade(RefMixin, Observable):
-    """
-    The Trade class manage trades (=market positions)
-
-    Arguments:
-        quantity: open trade quantities
-        direction: trade direction (`BUY`/`1` or `SELL`/`-1`)
-        epic: trade epic to open trade on
-        trade_manager: trade manager holding this trade
-        strategy: strategy that generated this trade
-        ref: trade name reference
-        stop_absolute: trade stop in absolute value
-        stop_relative: trade stop in relative value
-        limit_absolute: trade target profit in absolute value
-        limit_relative: trade target profit in relative value
-        meta: free of use dictionary
-
+        ref (str): reference of this instance
+            (see `estrade.mixins.ref.RefMixin`)
+        datetime (arrow.Arrow): datetime of open
+            (see `estrade.mixins.timed.TimedMixin`)
+        meta (Dict[str, Any]): Dictionary free of use
+            (see `estrade.mixins.meta.MetaMixin`)
+        status (estrade.enums.TransactionStatus): Transaction status of this trade
+            (see [`TransactionStatus`][estrade.enums.TransactionStatus])
     """
 
     def __init__(
         self,
+        direction: TradeDirection,
         quantity: int,
-        direction: Union[str, int],
-        trade_manager: 'TradeManager',
-        strategy: 'Strategy',
-        epic: 'Epic',
+        open_value: float,
+        open_datetime: arrow.Arrow,
+        epic: "Epic",
+        current_close_value: Optional[float] = None,
+        status: Optional[TransactionStatus] = TransactionStatus.CREATED,
+        strategy: Optional["BaseStrategy"] = None,
         ref: Optional[str] = None,
-        stop_absolute: Optional[Union[int, float]] = None,
-        stop_relative: Optional[Union[int, float]] = None,
-        limit_absolute: Optional[Union[int, float]] = None,
-        limit_relative: Optional[Union[int, float]] = None,
         meta: Optional[Dict[str, Any]] = None,
     ) -> None:
-        # set ref with parent class
-        RefMixin.__init__(self, ref)
+        """
+        Create a new trade instance.
 
-        # set class as observable so it can fire events
-        # TODO : fire events on trade update
-        Observable.__init__(self)
-
-        # set trade manager
-        self.trade_manager: 'TradeManager' = trade_manager
-
-        # set strategy
-        self.strategy: 'Strategy' = strategy
-
-        self.direction = direction
-        self.inital_quantities = abs(quantity)
-        self.opened_quantity = abs(quantity)
-        self.closed_quantity = 0
-        self.closed = False
-
-        # init empty list of ticks received by trade
-        open_tick = epic.ticks[-1]
-
-        if open_tick is None:
-            raise TradeException('Impossible to define trade open tick.')
-        elif not epic.tradeable:
-            raise TradeException(
-                'Open tick epic %s is not tradeable ' % open_tick.epic.ref
-            )
-        self.open_tick = open_tick
-        self.last_tick = open_tick
-        self.high_tick = open_tick
-        self.low_tick = open_tick
-        self.opened_result = open_tick.spread * -1
-        self.closed_result = 0
-        self.result = self.opened_result
-
-        # init empty list of closes
+        Arguments:
+            direction: trade direction (buy or sell)
+            quantity: quantity of the trade.
+            open_value: market value to open the Trade with
+            open_datetime: datetime of the trade open
+            status: operation status
+            epic: [`Epic`][estrade.epic.Epic] instance having at least one tick.
+            strategy: [`Strategy`][estrade.strategy.BaseStrategy] instance
+            ref: trade reference
+            meta: trade metadata
+        """
+        self.epic = epic
+        self.strategy = strategy  # TODO: test Strategy type
+        self.direction = direction  # TODO: check invalid direction
+        self.open_quantity = quantity  # TODO: check positive
         self.closes: List[TradeClose] = []
 
-        # set max gain and max losses
-        self.max_gain = float('inf') * -1
-        self.max_loss = float('inf')
+        self.open_value = open_value
+        self.current_close_value = current_close_value or open_value
 
-        # init stop/limit from params
-        self._stop = None
-        if stop_relative:
-            self.set_stop(stop_value=stop_relative, relative=True)
-        elif stop_absolute:
-            self.set_stop(stop_value=stop_absolute, relative=False)
+        self.max_result: float = self.result
+        self.min_result: float = self.result
 
-        self._limit = None
-        if limit_relative:
-            self.set_limit(limit_value=limit_relative, relative=True)
-        elif limit_absolute:
-            self.set_limit(limit_value=limit_absolute, relative=False)
+        RefMixin.__init__(self, ref)
+        TimedMixin.__init__(self, open_datetime)
+        MetaMixin.__init__(self, meta)
+        TransactionMixin.__init__(self, status)
 
-        self.on_new_tick(open_tick)
-
-        self.meta = {} if not meta or not isinstance(meta, dict) else meta
-
-        logger.info('%s' % repr(self))
-
-    ##################################################
-    # DIRECTION GET/SET
-    ##################################################
-    @property
-    def direction(self) -> int:
-        """
-        Returns:
-            trade direction, `1` for a BUY and `-1` for a sell.
-        """
-        return self._direction
-
-    @direction.setter
-    def direction(self, direction: Union[str, int]) -> None:
-        """
-        Set trade direction
-
-        Arguments:
-            direction: value in `[1, 'BUY']` to open a buy or value in `[-1, 'SELL']`
-                to open a sell
-        """
-        if direction:
-            if direction == 1 or (
-                isinstance(direction, str) and direction.upper() == 'BUY'
-            ):
-                self._direction = 1
-                return
-            elif direction == -1 or (
-                isinstance(direction, str) and direction.upper() == 'SELL'
-            ):
-                self._direction = -1
-                return
-        raise TradeException(f'Invalid trade direction: {direction}')
-
-    ##################################################
-    # STOP/LIMIT HELPERS
-    ##################################################
-    def _set_stop_limit(
-        self, type_: str, value: Union[int, float], relative: bool
-    ) -> Union[StopLimitMixinAbsolute, StopLimitMixinRelative]:
-        """
-        Set a stop or a limit on trade
-
-        Arguments:
-            type_: `STOP` or `LIMIT`
-            value: stop/limit value
-            relative: is the stop/limit value is relative or absolute
-
-        Returns:
-            Stop/Limit object
-        """
-        if relative:
-            # set stop/limit as relative
-            return StopLimitMixinRelative(type_=type_, trade=self, value=value,)
-
-        # set stop/limit as an absolute stop
-        return StopLimitMixinAbsolute(type_=type_.lower(), trade=self, value=value)
-
-    ##################################################
-    # STOP GET/SET
-    ##################################################
-    @property
-    def stop(self) -> Optional[Union[StopLimitMixinRelative, StopLimitMixinAbsolute]]:
-        """
-        Returns:
-            Stop/Limit object
-        """
-        return self._stop
-
-    @stop.setter
-    def stop(self, stop: Any) -> None:
-        """
-        Prevent set of stop directly as stop set requires to define if the stop is
-        relative (use set_stop method)
-
-        Argument:
-            Stop value
-
-        !!! warning
-            Do not use this method, use the set_stop
-
-        """
-        raise NotImplementedError(
-            'Impossible to directly set stop on trade, use Trade.set_stop method'
+        # self.epic.trade_provider.open_trade(self)
+        logger.info(
+            "New %s trade created: %s @ %s", self.direction, self.ref, self.open_value
         )
 
-    def set_stop(self, stop_value: Union[int, float], relative: bool = False) -> None:
+    def asdict(self) -> Dict[str, Any]:
+        dict_representation = {
+            "ref": self.ref,
+            "status": self.status,
+            "epic": self.epic.ref,
+            "strategy": self.strategy.ref if self.strategy else "undefined",
+            "open_date": self.datetime.format("YYYY-MM-DD HH:mm:ss"),
+            "direction": self.direction,
+            "open_quantity": self.open_quantity,
+            "open_value": self.open_value,
+            "closed_quantities": self.closed_quantities,
+            "result": self.result,
+        }
+        return dict_representation
+
+    ####################
+    # OPEN
+    ####################
+    @staticmethod
+    def open_from_tick(tick: "Tick", epic: "Epic", **kwargs: Any) -> "Trade":
         """
-        Stop setter
+        Open a [`Trade`][estrade.trade.Trade] from a [`Tick`][estrade.tick.Tick].
 
         Arguments:
-            stop_value: stop value
-            relative: is the stop value relative to trade open tick or absolute
+            tick: [`Tick`][estrade.tick.Tick] instance.
+            kwargs: Arguments with the same constraints as the
+                [`Trade`][estrade.trade.Trade.__init__]
         """
-        self._stop = self._set_stop_limit(
-            type_='stop', value=stop_value, relative=relative
+        if kwargs["direction"] == TradeDirection.BUY:
+            kwargs["open_value"] = tick.ask
+            kwargs["current_close_value"] = tick.bid
+        elif kwargs["direction"] == TradeDirection.SELL:
+            kwargs["open_value"] = tick.bid
+            kwargs["current_close_value"] = tick.ask
+        else:
+            raise TradeException("Invalid direction")
+
+        kwargs["open_datetime"] = tick.datetime
+
+        trade = Trade(
+            epic=epic,
+            **kwargs,
+        )
+        return trade
+
+    @staticmethod
+    def open_from_epic(epic: "Epic", **kwargs: Any) -> "Trade":
+        """
+        Open a trade from an Epic current last tick.
+
+        Arguments:
+            epic: Epic instance to open the Trade from
+            kwargs: see [`Trade`][estrade.trade.Trade] `__init__` method arguments
+
+        Returns:
+            opened trade instance.
+        """
+        new_trade = Trade.open_from_tick(
+            tick=epic.last_tick,
+            epic=epic,
+            **kwargs,
         )
 
-    ##################################################
-    # LIMIT GET/SET
-    ##################################################
-    @property
-    def limit(self) -> Optional[Union[StopLimitMixinAbsolute, StopLimitMixinRelative]]:
-        """
-        Returns:
-            Trade Stop/Limit object
-        """
-        return self._limit
+        return new_trade
 
-    @limit.setter
-    def limit(self, limit: Any) -> None:
+    ####################
+    # Update
+    ####################
+    def _update_min_max(self) -> None:
+        """Update trade min and max result."""
+        if self.result > self.max_result:
+            self.max_result = self.result
+        if self.result < self.min_result:
+            self.min_result = self.result
+
+    def update(self, current_close_value: float) -> None:
         """
-        Prevent set of limit directly as limit set requires to define if the limit is
-        relative (use set_limit method)
-
-        Arguments:
-            limit: limit value
-
-        !!! warning
-            Do not use this method, use `Trade.set_limit()`
-
-        """
-        raise NotImplementedError(
-            'Impossible to directly set limit on trade, use Trade.set_limit method'
-        )
-
-    def set_limit(self, limit_value: Union[int, float], relative: bool = False) -> None:
-        """
-        Limit setter
+        Update trade with the current market value.
 
         Arguments:
-            limit_value: value of the target profit
-            relative: is the value provided relative to trade open tick or absolute
-        """
-        self._limit = self._set_stop_limit(
-            type_='limit', value=limit_value, relative=relative
-        )
+            current_close_value: the current market value to close this Trade.
 
-    ##################################################
-    # EPIC GETTERS
-    ##################################################
-    @property
-    def epic(self) -> 'Epic':
-        """
-        get trade epic
+        !!! example
 
-        Returns:
-            Trade Epic
+            ```python
+            --8<-- "tests/doc/reference/trade/test_update.py"
+            ```
         """
-        return self.open_tick.epic
-
-    ##################################################
-    # OPEN GETTERS
-    ##################################################
-    @property
-    def open(self) -> float:
-        """
-        Returns:
-            trade open value (value of open tick)
-        """
-        if self.direction > 0:
-            return self.open_tick.ask
-
-        return self.open_tick.bid
-
-    @property
-    def high(self) -> float:
-        """
-        Returns:
-            trade higher tick value
-        """
-        return self.high_tick.bid if self.direction > 0 else self.high_tick.ask
-
-    @property
-    def low(self) -> float:
-        """
-        Returns:
-            trade lower tick value
-        """
-        return self.high_tick.bid if self.direction > 0 else self.high_tick.ask
-
-    ##################################################
-    # QUANTITIES GETTERS
-    ##################################################
-    @property
-    def quantity(self) -> int:
-        """
-        Returns:
-            current opened quantities
-        """
-        return self.opened_quantity
-
-    ##################################################
-    # CLOSE
-    ##################################################
-    def close(
-        self, tick: Tick = None, quantity: int = None, close_reason: str = 'manual'
-    ) -> None:
-        """
-        Total or partial close of trade.
-
-        Arguments:
-            tick: tick to close trade with (last epic tick if not provided)
-            quantity: quantity to close (all closed if not provided)
-            close_reason: justification of the trade close (for reporting use)
-
-        """
-        # define quantities to close
-        if quantity and quantity > self.opened_quantity:
-            raise TradeException(
-                f'Impossible to close {quantity} '
-                f'(more than remaining quantity {self.opened_quantity}'
-            )
-        if not quantity:
-            quantity = self.opened_quantity
-
-        # define tick to use for close
-        if not tick:
-            tick = self.epic.ticks[-1]
-
-        # prevent close when epic is not tradeable
-        if not tick.epic.tradeable:
-            logger.error(
-                'Impossible to close trade because epic %s is not tradeable.'
-                % tick.epic.ref
-            )
+        if self.closed:
+            logger.error("Cannot update a closed trade.")
             return
 
-        # calculate result of this close
-        close_result = self._calculate_result(close_tick=tick, quantity=quantity)
-        self.closed_result += close_result
+        self.current_close_value = current_close_value
 
-        # add a new close object to list of closed.
-        self.closes.append(
-            TradeClose(
-                tick=tick, quantity=quantity, result=close_result, reason=close_reason,
-            )
-        )
-        self.closed_quantity += quantity
-        self.opened_quantity -= quantity
-        if self.opened_quantity <= 0:
-            self.result = self.closed_result
-            self.closed = True
-        else:
-            self.result = self._calculate_result(tick) + self.closed_result
+        self._update_min_max()
 
-        logger.info(
-            '%s : Close %d @ %f > %f (max loss: %f, max_gain: %f)'
-            % (
-                tick.datetime,
-                quantity,
-                tick.value,
-                close_result,
-                self.max_loss,
-                self.max_gain,
-            )
-        )
-
-    ##################################################
-    # RESULT
-    ##################################################
-    def _calculate_result(self, close_tick: Tick = None, quantity: int = None) -> float:
+    def update_from_tick(self, tick: "Tick") -> None:
         """
-        Calculate trade result for close.
+        Update current trade from the input Tick.
+
+        Arguments:
+            tick: Tick instance to use to update the trade result.
+        """
+        if self.direction == TradeDirection.BUY:
+            current_close_value = tick.bid
+        else:
+            current_close_value = tick.ask
+
+        self.update(current_close_value)
+
+    def update_from_epic(self) -> None:
+        """Update current trade from its Epic current value."""
+        self.update_from_tick(self.epic.last_tick)
+
+    ####################
+    # Close
+    ####################
+    def close(
+        self,
+        close_value: float,
+        datetime: Union[pydatetime, arrow.Arrow],
+        quantity: Optional[int] = None,
+        **kwargs,
+    ) -> "TradeClose":
+        """
+        Close (totally or partially) a trade.
+
+        This method create a new instance of [`TradeClose`][estrade.trade.TradeClose]
+        and adds it to this instance `closes`.
+
+        Arguments:
+            close_value: the market value at which the close is performed.
+            datetime: datetime of the closing.
+            quantity: quantity to close, default to the remaining open quantities if
+                not provided.
 
         Returns:
-            The trade result
-        """
-        if not close_tick:
-            close_tick = self.last_tick
-        if not quantity:
-            quantity = self.opened_quantity
-
-        if self.direction > 0:
-            return round((close_tick.bid - self.open_tick.ask) * abs(quantity), 2)
-        else:
-            return round((self.open_tick.bid - close_tick.ask) * abs(quantity), 2)
-
-    ##################################################
-    # HANDLE NEW TICK
-    ##################################################
-    def on_new_tick(self, tick: Tick):
-        """
-        Method triggered when a new tick is received by trade_manager.
-
-        Arguments:
-            tick: new tick received
+            The [`TradeClose`][estrade.trade.TradeClose] instance created.
 
         """
-        if not self.closed:
-            self.last_tick = tick
-            if tick.value > self.high_tick.value:
-                self.high_tick = tick
-            if tick.value < self.low_tick.value:
-                self.low_tick = tick
+        quantity = quantity or self.opened_quantities
 
-            # update max gain and max loss
-            self.opened_result = self._calculate_result(tick)
-            self.result = self.closed_result + self.opened_result
-
-            self.update_max_loss_gains(self.result)
-
-            # check stop/limit
-            logger.debug(
-                'Check if tick value reached stop (%s) or limit (%s)'
-                % (self.stop, self.limit)
+        if quantity > self.opened_quantities:
+            logger.error(
+                f"Impossible to close {quantity} when only "
+                f"{self.opened_quantities} are opened."
             )
-            if self.stop and self.stop.check(tick):
-                if self.trade_manager:
-                    self.trade_manager.close_trade(trade=self, close_reason='stop')
-                else:
-                    self.close(close_reason='stop')
-            elif self.limit and self.limit.check(tick):
-                if self.trade_manager:
-                    self.trade_manager.close_trade(trade=self, close_reason='limit')
-                else:
-                    self.close(close_reason='limit')
+            quantity = self.opened_quantities
 
-    def update_max_loss_gains(self, current_result: float) -> None:
-        """
-        Update trade max gain and max losses.
-
-        Arguments:
-            current_result: current trade result
-        """
-        if current_result < self.max_loss:
-            self.max_loss = self.result
-        elif current_result > self.max_gain:
-            self.max_gain = self.result
-
-    ##################################################
-    # REPORTING
-    ##################################################
-    @property
-    def to_json(self):
-        return {
-            'ref': self.ref,
-            'open_at': self.open_tick.datetime,
-            'open': self.open_tick.value,
-            'open_quantity': abs(self.inital_quantities),
-            'direction': self.direction,
-            'stop_rel': self.stop.relative_value if self.stop else None,
-            'stop_abs': self.stop.absolute_value if self.stop else None,
-            'limit_rel': self.limit.relative_value if self.limit else None,
-            'limit_abs': self.limit.absolute_value if self.limit else None,
-            'closed_quantity': abs(self.closed_quantity),
-            'closed': self.closed,
-            'closes': [c.to_json() for c in self.closes],
-            'result': self.result,
-            'max_loss': self.max_loss,
-            'max_gain': self.max_gain,
-            **self.meta,
-        }
-
-    @property
-    def json_headers(self):
-        base_headers = [
-            'ref',
-            'open_at',
-            'open',
-            'open_quantity',
-            'direction',
-            'stop_rel',
-            'stop_abs',
-            'limit_rel',
-            'limit_abs',
-            'closed_quantity',
-            'closed',
-            'closes',
-            'result',
-            'max_loss',
-            'max_gain',
-        ]
-        base_headers.extend(list(self.meta.keys()))
-        return base_headers
-
-    def __repr__(self):
-        repr_string = (
-            f'{self.open_tick.datetime}: '
-            f'Trade for {self.inital_quantities} @ {self.open} '
-            f'with ref: {self.ref} '
-            f'on strategy {self.strategy.ref if self.strategy else None}'
+        logger.info(
+            "Close %s quantities of trade %s @ %s", quantity, self.ref, close_value
         )
-        if self.stop:
-            repr_string = (
-                f'{repr_string}, '
-                f'stop absolute: {self.stop.absolute_value}, '
-                f'stop relative {self.stop.relative_value}'
-            )
-        if self.limit:
-            repr_string = (
-                f'{repr_string}, '
-                f'limit absolute: {self.limit.absolute_value}, '
-                f'limit relative {self.limit.relative_value}'
-            )
-        return repr_string
+        new_close = TradeClose(
+            trade=self,
+            close_value=close_value,
+            quantity=quantity,
+            datetime=datetime,
+            **kwargs,
+        )
+        self.closes.append(new_close)
+        return new_close
+
+    def close_from_tick(self, tick: "Tick", **kwargs) -> "TradeClose":
+        """
+        Close current Trade from a Tick instance.
+
+        Arguments:
+            tick: Tick instance to use to close the current trade.
+
+        Returns:
+            The [`TradeClose`][estrade.trade.TradeClose] instance created.
+        """
+        # update current trade with tick to set self.current_close_value
+        self.update_from_tick(tick)
+
+        trade_close = self.close(
+            datetime=tick.datetime,
+            close_value=self.current_close_value,
+            **kwargs,
+        )
+        return trade_close
+
+    def close_from_epic(self, **kwargs) -> "TradeClose":
+        """
+        Close Trade with its Epic last tick.
+
+        Arguments:
+            kwargs: see [`TradeClose`][estrade.trade.TradeClose] arguments
+
+        Returns:
+            The [`TradeClose`][estrade.trade.TradeClose] instance created.
+        """
+        trade_close = self.close_from_tick(self.epic.last_tick, **kwargs)
+
+        return trade_close
+
+    ####################
+    # Properties
+    ####################
+    @property
+    def closed_quantities(self) -> int:
+        """
+        Return closed quantities of the trade.
+
+        return:
+            Sum of closed quantities.
+        """
+        return sum(c.quantity for c in self.closes) if self.closes else 0
+
+    @property
+    def opened_quantities(self) -> int:
+        """
+        Return opened quantities of the trade.
+
+        return:
+            Sum of opened quantities.
+        """
+        return self.open_quantity - self.closed_quantities
+
+    @property
+    def closed(self) -> bool:
+        """
+        Check if the trade is closed.
+
+        return:
+            `True` if all the open quantities closed.
+        """
+        return self.opened_quantities == 0
+
+    @property
+    def opened_result_avg(self) -> float:
+        """
+        Average result per opened quantity.
+
+        return:
+            difference between open and last value.
+        """
+        if self.closed:
+            return 0.0
+
+        if self.direction == TradeDirection.BUY:
+            avg_result = self.current_close_value - self.open_value
+        else:
+            avg_result = self.open_value - self.current_close_value
+        return round(avg_result, 2)
+
+    @property
+    def opened_result(self) -> float:
+        """
+        Return result of the opened quantities.
+
+        return:
+            difference between open and last value multiplied by open quantities.
+        """
+        return self.opened_result_avg * self.opened_quantities
+
+    @property
+    def closed_result_avg(self) -> float:
+        """
+        Average result of the closed quantities.
+
+        return:
+            sum of closes average result (does not takes quantities into
+            account).
+        """
+        return round(
+            sum(close.result for close in self.closes) / self.closed_quantities
+            if self.closes
+            else 0,
+            2,
+        )
+
+    @property
+    def closed_result(self) -> float:
+        """
+        Return closed result of the current trade.
+
+        return:
+            sum of closes result.
+        """
+        return sum(close.result for close in self.closes) if self.closes else 0
+
+    @property
+    def result(self) -> float:
+        """
+        Trade current result.
+
+        return:
+            trade result
+        """
+        return self.opened_result + self.closed_result
+
+    @property
+    def result_avg(self) -> float:
+        """
+        Trade average result per quantity.
+
+        return:
+            trade average result (does not takes quantities into account)
+        """
+        return round(self.result / self.open_quantity, 2)
+
+
+class TradeClose(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
+    """Partial close of a [`Trade`][estrade.trade.Trade]."""
+
+    def __init__(
+        self,
+        trade: Trade,
+        close_value: float,
+        quantity: int,
+        datetime: Union[pydatetime, arrow.Arrow],
+        status: Optional[TransactionStatus] = TransactionStatus.CREATED,
+        ref: Optional[str] = None,
+        meta: Optional[Dict[Any, Any]] = None,
+    ) -> None:
+        """
+        Create a new partial close of a trade.
+
+        Arguments:
+            trade: [`Trade`][estrade.trade.Trade] instance.
+            close_value: current market value at close time.
+            quantity: closed quantities
+            datetime: close datetime
+            ref: an optional name for this close
+            meta: trade close metadata
+        """
+        self.trade = trade
+        self.close_value = close_value
+        self.quantity = quantity
+
+        TransactionMixin.__init__(self, status)
+        TimedMixin.__init__(self, datetime)
+        MetaMixin.__init__(self, meta)
+        RefMixin.__init__(self, ref)
+
+    @property
+    def result_avg(self) -> float:
+        """
+        Trade average result.
+
+        Average result per quantity.
+
+        Returns:
+            Average result of this close per quantity.
+        """
+        if self.trade.direction == TradeDirection.BUY:
+            return round(self.close_value - self.trade.open_value, 2)
+        return round(self.trade.open_value - self.close_value, 2)
+
+    @property
+    def result(self) -> float:
+        """
+        Trade total result.
+
+        Returns:
+            Total result of this close per quantity.
+        """
+        return round(self.result_avg * self.quantity, 2)
