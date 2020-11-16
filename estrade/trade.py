@@ -30,6 +30,8 @@ class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
         current_close_value (float): current market value to close this trade.
         max_result (float): max result of this instance
         min_result (float): min result of this instance
+        absolute_stop (Optional[float]): stop value for this trade
+        absolute_limit (Optional[float]): limit value for this trade
 
         ref (str): reference of this instance
             (see `estrade.mixins.ref.RefMixin`)
@@ -51,6 +53,10 @@ class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
         current_close_value: Optional[float] = None,
         status: Optional[TransactionStatus] = TransactionStatus.CREATED,
         strategy: Optional["BaseStrategy"] = None,
+        stop_absolute: Optional[float] = None,
+        limit_absolute: Optional[float] = None,
+        stop_relative: Optional[float] = None,
+        limit_relative: Optional[float] = None,
         ref: Optional[str] = None,
         meta: Optional[Dict[str, Any]] = None,
     ) -> None:
@@ -65,6 +71,11 @@ class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
             status: operation status
             epic: [`Epic`][estrade.epic.Epic] instance having at least one tick.
             strategy: [`Strategy`][estrade.strategy.BaseStrategy] instance
+            stop_absolute (Optional[float]): stop value for this trade
+            stop_relative (Optional[float]): stop value relative to open for this trade
+            limit_absolute (Optional[float]): limit value for this trade
+            limit_relative (Optional[float]): limit value relative to open for
+                this trade
             ref: trade reference
             meta: trade metadata
         """
@@ -80,6 +91,11 @@ class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
         self.max_result: float = self.result
         self.min_result: float = self.result
 
+        self.absolute_stop: Optional[float] = None
+        self.absolute_limit: Optional[float] = None
+        self._init_stop(stop_absolute, stop_relative)
+        self._init_limit(limit_absolute, limit_relative)
+
         RefMixin.__init__(self, ref)
         TimedMixin.__init__(self, open_datetime)
         MetaMixin.__init__(self, meta)
@@ -89,6 +105,22 @@ class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
         logger.info(
             "New %s trade created: %s @ %s", self.direction, self.ref, self.open_value
         )
+
+    def _init_stop(
+        self, stop_absolute: Optional[float], stop_relative: Optional[float]
+    ):
+        if stop_absolute:
+            self.set_stop_absolute(stop_absolute, send_provider_update=False)
+        elif stop_relative:
+            self.set_stop_relative(stop_relative, send_provider_update=False)
+
+    def _init_limit(
+        self, limit_absolute: Optional[float], limit_relative: Optional[float]
+    ):
+        if limit_absolute:
+            self.set_limit_absolute(limit_absolute, send_provider_update=False)
+        elif limit_relative:
+            self.set_limit_relative(limit_relative, send_provider_update=False)
 
     def asdict(self) -> Dict[str, Any]:
         dict_representation = {
@@ -165,6 +197,23 @@ class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
         if self.result < self.min_result:
             self.min_result = self.result
 
+    def _stop_limit_reached(self) -> bool:
+        if self.direction == TradeDirection.BUY:
+            if self.absolute_stop and self.current_close_value <= self.absolute_stop:
+                return True
+            elif (
+                self.absolute_limit and self.current_close_value >= self.absolute_limit
+            ):
+                return True
+        else:
+            if self.absolute_stop and self.current_close_value >= self.absolute_stop:
+                return True
+            elif (
+                self.absolute_limit and self.current_close_value <= self.absolute_limit
+            ):
+                return True
+        return False
+
     def update(self, current_close_value: float) -> None:
         """
         Update trade with the current market value.
@@ -183,6 +232,12 @@ class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
             return
 
         self.current_close_value = current_close_value
+
+        if self._stop_limit_reached():
+            self.close(
+                close_value=self.current_close_value,
+                meta={"close_reason": "stop_limit_reached"},
+            )
 
         self._update_min_max()
 
@@ -204,13 +259,111 @@ class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
         """Update current trade from its Epic current value."""
         self.update_from_tick(self.epic.last_tick)
 
+    def set_stop_absolute(
+        self, absolute_stop: float, send_provider_update=True
+    ) -> None:
+        """
+        Add a stop by its absolute value on the current instance.
+
+        Arguments:
+            absolute_stop: stop absolute value
+            send_provider_update: send an update to provider to notify the stop update
+        """
+        if self.direction == TradeDirection.BUY and absolute_stop >= self.open_value:
+            raise TradeException(
+                f"Impossible to set a stop ({absolute_stop}) "
+                f">= current value ({self.current_close_value})"
+            )
+        elif self.direction == TradeDirection.SELL and absolute_stop <= self.open_value:
+            raise TradeException(
+                f"Impossible to set a stop ({absolute_stop}) "
+                f"<= current value ({self.current_close_value})"
+            )
+
+        self.absolute_stop = absolute_stop
+        if send_provider_update:
+            self.epic.trade_provider.update_stop(trade=self)  # type: ignore
+
+    def set_stop_relative(
+        self, relative_stop: float, send_provider_update=True
+    ) -> None:
+        """
+        Add a stop by its relative value on the current instance.
+
+        Arguments:
+            relative_stop: stop absolute value
+            send_provider_update: send an update to provider to notify the stop update
+
+        !!! note
+
+            stop is relative to the trade open value.
+        """
+        if self.direction == TradeDirection.BUY:
+            self.set_stop_absolute(
+                self.open_value - relative_stop, send_provider_update
+            )
+        else:
+            self.set_stop_absolute(
+                self.open_value + relative_stop, send_provider_update
+            )
+
+    def set_limit_absolute(
+        self, absolute_limit: float, send_provider_update=True
+    ) -> None:
+        """
+        Add a limit by its absolute value on the current instance.
+
+        Arguments:
+            absolute_limit: limit absolute value
+            send_provider_update: send an update to provider to notify the limit update
+        """
+        if self.direction == TradeDirection.BUY and absolute_limit <= self.open_value:
+            raise TradeException(
+                f"Impossible to set a stop ({absolute_limit}) "
+                f"<= current value ({self.current_close_value})"
+            )
+        elif (
+            self.direction == TradeDirection.SELL and absolute_limit >= self.open_value
+        ):
+            raise TradeException(
+                f"Impossible to set a stop ({absolute_limit}) "
+                f">= current value ({self.current_close_value})"
+            )
+
+        self.absolute_limit = absolute_limit
+        if send_provider_update:
+            self.epic.trade_provider.update_limit(trade=self)  # type: ignore
+
+    def set_limit_relative(
+        self, relative_limit: float, send_provider_update=True
+    ) -> None:
+        """
+        Add a limit by its relative value on the current instance.
+
+        Arguments:
+            relative_limit: limit absolute value
+            send_provider_update: send an update to provider to notify the limit update
+
+        !!! note
+
+            limit is relative to the trade open value.
+        """
+        if self.direction == TradeDirection.BUY:
+            self.set_limit_absolute(
+                self.open_value + relative_limit, send_provider_update
+            )
+        else:
+            self.set_limit_absolute(
+                self.open_value - relative_limit, send_provider_update
+            )
+
     ####################
     # Close
     ####################
     def close(
         self,
         close_value: float,
-        datetime: Union[pydatetime, arrow.Arrow],
+        datetime: Optional[Union[pydatetime, arrow.Arrow]] = None,
         quantity: Optional[int] = None,
         **kwargs,
     ) -> "TradeClose":
@@ -231,6 +384,7 @@ class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
 
         """
         quantity = quantity or self.opened_quantities
+        datetime = datetime or self.epic.last_tick.datetime
 
         if quantity > self.opened_quantities:
             logger.error(

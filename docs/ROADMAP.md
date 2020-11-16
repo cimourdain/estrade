@@ -8,7 +8,6 @@
 
 # Priority 2
 
-- [ ] Stop/Limit
 - [ ] Event based
 - [ ] Other Indicators
 - [ ] Lag simulation

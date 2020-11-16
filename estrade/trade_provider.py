@@ -82,6 +82,78 @@ class BaseTradeProvider(RefMixin):
         self.threads.append(thr)
         thr.start()
 
+    def update_trade_stop_request(self, trade: "Trade") -> "Trade":
+        """
+        Call an external Trade Provider to update a Trade stop.
+
+        !!! note
+            after sending request to provider, it is recommened to update the
+            trade object:
+
+             - `trade.status` to set to pending or confirmed.
+             - `trade.meta` to update with the provider transaction details.
+
+        Arguments:
+            trade: [`Trade`][estrade.trade.Trade] instance to update
+
+        Returns:
+            updated [`Trade`][estrade.trade.Trade] instance
+        """
+        raise NotImplementedError()
+
+    def update_stop(self, trade: "Trade") -> None:
+        """
+        Update a trade stop.
+
+        Create a thread to perform the provider request (so the thread request does
+        not bock the rest of the program)
+
+        Arguments:
+            trade: trade to update.
+        """
+        thr = threading.Thread(
+            target=self.update_trade_stop_request,
+            args=(),
+            kwargs={"trade": trade},
+        )
+        thr.start()
+
+    def update_trade_limit_request(self, trade: "Trade") -> "Trade":
+        """
+        Call an external Trade Provider to update a Trade limit.
+
+        !!! note
+            after sending request to provider, it is recommened to update the
+            trade object:
+
+             - `trade.status` to set to pending or confirmed.
+             - `trade.meta` to update with the provider transaction details.
+
+        Arguments:
+            trade: [`Trade`][estrade.trade.Trade] instance to update
+
+        Returns:
+            updated [`Trade`][estrade.trade.Trade] instance
+        """
+        raise NotImplementedError()
+
+    def update_limit(self, trade: "Trade") -> None:
+        """
+        Update a trade limit.
+
+        Create a thread to perform the provider request (so the thread request does
+        not bock the rest of the program)
+
+        Arguments:
+            trade: trade to update.
+        """
+        thr = threading.Thread(
+            target=self.update_trade_limit_request,
+            args=(),
+            kwargs={"trade": trade},
+        )
+        thr.start()
+
     def close_trade_request(self, trade_close: "TradeClose") -> "TradeClose":
         """
         Call an external Trade Provider to close a Trade.
@@ -200,6 +272,24 @@ class TradeProviderBacktests(BaseTradeProvider):
             trade: trade to open.
         """
         trade.status = TransactionStatus.CONFIRMED
+        return trade
+
+    def update_trade_stop_request(self, trade: "Trade") -> "Trade":
+        """
+        Return input trade.
+
+        Arguments:
+            trade: close to perform on trade.
+        """
+        return trade
+
+    def update_trade_limit_request(self, trade: "Trade") -> "Trade":
+        """
+        Return input trade.
+
+        Arguments:
+            trade: close to perform on trade.
+        """
         return trade
 
     def close_trade_request(self, trade_close: "TradeClose") -> "TradeClose":

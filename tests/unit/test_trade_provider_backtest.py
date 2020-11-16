@@ -3,9 +3,9 @@ from unittest.mock import PropertyMock, call
 import pytest
 
 from estrade import BaseTradeProvider, Trade
-from estrade.enums import TradeDirection
+from estrade.enums import TradeDirection, TransactionStatus
 from estrade.trade_provider import TradeProviderBacktests
-from tests.unit.factories import TradeProviderBacktestsFactory
+from tests.unit.factories import TradeFactory, TradeProviderBacktestsFactory
 
 
 CLASS_BASE_DEFINITION_PATH = "estrade.trade_provider.BaseTradeProvider"
@@ -95,3 +95,61 @@ class TestOpen:
         trade_provider.open_trade(trade_mock)
 
         assert mock_open_trade.call_args_list == []
+
+
+class TestOpenTradeRequest:
+    def test_update_status(self):
+        trade_provider = TradeProviderBacktestsFactory()
+        trade = TradeFactory()
+        trade.status = TransactionStatus.REQUIRED
+
+        trade_provider.open_trade_request(trade)
+
+        assert trade.status == TransactionStatus.CONFIRMED
+
+    def test_response(self):
+        trade_provider = TradeProviderBacktestsFactory()
+        trade = TradeFactory()
+
+        response = trade_provider.open_trade_request(trade)
+
+        assert response == trade
+
+
+class TestUpdateTradeStopRequest:
+    def test_response(self):
+        trade_provider = TradeProviderBacktestsFactory()
+        trade = TradeFactory()
+
+        response = trade_provider.update_trade_stop_request(trade)
+
+        assert response == trade
+
+
+class TestUpdateTradelimitRequest:
+    def test_response(self):
+        trade_provider = TradeProviderBacktestsFactory()
+        trade = TradeFactory()
+
+        response = trade_provider.update_trade_limit_request(trade)
+
+        assert response == trade
+
+
+class TestCloseTradeRequest:
+    def test_update_status(self):
+        trade_provider = TradeProviderBacktestsFactory()
+        trade = TradeFactory()
+        trade.status = TransactionStatus.REQUIRED
+
+        trade_provider.open_trade_request(trade)
+
+        assert trade.status == TransactionStatus.CONFIRMED
+
+    def test_response(self):
+        trade_provider = TradeProviderBacktestsFactory()
+        trade = TradeFactory()
+
+        response = trade_provider.open_trade_request(trade)
+
+        assert response == trade

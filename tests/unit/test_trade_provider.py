@@ -97,6 +97,82 @@ class TestOpenTrade:
         assert mock_thread_start.call_args_list == [call()]
 
 
+class TestUpdateStopRequest:
+    def test_unimplemented(self):
+        trade_provider = TradeProviderFactory()
+
+        with pytest.raises(NotImplementedError):
+            trade_provider.update_trade_stop_request("trade")
+
+
+class TestUpdateStop:
+    @pytest.fixture(autouse=True)
+    def mock_init_thread(self, mocker):
+        thread_mocker = mocker.Mock(spec=threading.Thread)
+        mock = mocker.patch("threading.Thread", return_value=thread_mocker)
+
+        return mock
+
+    def test_open_thread(self, mock_init_thread):
+        trade_provider = TradeProviderFactory()
+        trade = TradeFactory()
+        trade_provider.update_stop(trade)
+
+        assert mock_init_thread.call_args_list == [
+            call(
+                target=trade_provider.update_trade_stop_request,
+                args=(),
+                kwargs={"trade": trade},
+            )
+        ]
+
+    def test_start_thread(self, mock_init_thread):
+        mock_thread_start = mock_init_thread.return_value.start
+        trade_provider = TradeProviderFactory()
+        trade = TradeFactory()
+        trade_provider.update_stop(trade)
+
+        assert mock_thread_start.call_args_list == [call()]
+
+
+class TestUpdateLimitRequest:
+    def test_unimplemented(self):
+        trade_provider = TradeProviderFactory()
+
+        with pytest.raises(NotImplementedError):
+            trade_provider.update_trade_limit_request("trade")
+
+
+class TestUpdatelimit:
+    @pytest.fixture(autouse=True)
+    def mock_init_thread(self, mocker):
+        thread_mocker = mocker.Mock(spec=threading.Thread)
+        mock = mocker.patch("threading.Thread", return_value=thread_mocker)
+
+        return mock
+
+    def test_open_thread(self, mock_init_thread):
+        trade_provider = TradeProviderFactory()
+        trade = TradeFactory()
+        trade_provider.update_limit(trade)
+
+        assert mock_init_thread.call_args_list == [
+            call(
+                target=trade_provider.update_trade_limit_request,
+                args=(),
+                kwargs={"trade": trade},
+            )
+        ]
+
+    def test_start_thread(self, mock_init_thread):
+        mock_thread_start = mock_init_thread.return_value.start
+        trade_provider = TradeProviderFactory()
+        trade = TradeFactory()
+        trade_provider.update_limit(trade)
+
+        assert mock_thread_start.call_args_list == [call()]
+
+
 class TestCloseRequest:
     def test_unimplemented(self):
         trade_provider = TradeProviderFactory()
