@@ -92,6 +92,16 @@ class TestInit:
 
         assert fr.indicators == {"my_indicator_ref": "indicator_value"}
 
+    def test_empty_default(self):
+        fr = FrameFactory()
+
+        assert fr.empty is False
+
+    def test_empty_manual(self):
+        fr = FrameFactory(empty=True)
+
+        assert fr.empty is True
+
 
 class TestClosed:
     def test_not_closed(self):

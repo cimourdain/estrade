@@ -56,9 +56,10 @@ class BaseIndicatorValue:
         """
         frame = self.frame.previous_frame
         while frame is not None:
-            indicator = frame.indicators.get(self.indicator.ref)
-            if indicator is not None:
-                return indicator
+            if not frame.empty:
+                indicator = frame.indicators.get(self.indicator.ref)
+                if indicator is not None:
+                    return indicator
             frame = frame.previous_frame
         return None
 

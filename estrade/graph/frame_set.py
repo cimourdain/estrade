@@ -42,6 +42,7 @@ class Frame:
         period_start: "Arrow",
         period_end: Optional["Arrow"] = None,
         previous_frame: Optional["Frame"] = None,
+        empty: bool = False,
     ) -> None:
         """
         Create a new Frame.
@@ -59,6 +60,7 @@ class Frame:
         self.period_end = period_end
         self.previous_frame = previous_frame
         self.next_frame: Optional["Frame"] = None
+        self.empty = empty
 
         self.nb_ticks = 1
         self.last_tick = first_tick
@@ -204,6 +206,7 @@ class FrameSet(TimeframeMixin, RefMixin):
         tick: "Tick",
         period_start: "Arrow",
         period_end: Optional["Arrow"] = None,
+        empty: bool = False,
     ) -> None:
         new_frame = Frame(
             parent_frameset=self,
@@ -211,6 +214,7 @@ class FrameSet(TimeframeMixin, RefMixin):
             period_start=period_start,
             period_end=period_end,
             previous_frame=self.current,
+            empty=empty,
         )
 
         if self.current:
@@ -227,6 +231,7 @@ class FrameSet(TimeframeMixin, RefMixin):
                     self.current.last_tick,
                     self.current.period_end,
                     self.get_frame_end(self.current.period_end),
+                    empty=True,
                 )
 
         self.create_new_frame(tick, period_start, period_end)

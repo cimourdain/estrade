@@ -28,6 +28,7 @@ class TestInheritance:
 
         frame_mock = mocker.Mock()
         frame_mock.previous_frame.indicators = {}
+        frame_mock.previous_frame.empty = False
         frame_mock.previous_frame.previous_frame = None
         indicator_mock = mocker.Mock()
         indicator_mock.max_periods = 100
@@ -52,6 +53,7 @@ class TestInit:
         previous_value_mock = mocker.Mock()
         previous_value_mock.extended_closes = [1, 2, 3]
         frame_mock = mocker.Mock()
+        frame_mock.previous_frame.empty = False
         frame_mock.previous_frame.indicators = {"sma": previous_value_mock}
 
         sma = SimpleMovingAverageFactory(ref="sma", max_periods=3)
@@ -71,6 +73,7 @@ class TestInit:
         previous_value_mock = mocker.Mock()
         previous_value_mock.extended_closes = [1, 2, 3]
         frame_mock = mocker.Mock()
+        frame_mock.previous_frame.empty = False
         frame_mock.previous_frame.indicators = {"sma": previous_value_mock}
         frame_mock.last_tick.value = 4
 

@@ -68,6 +68,7 @@ class TestPrevious:
 
         frame_mock = mocker.Mock()
         previous_frame_mock = mocker.Mock()
+        previous_frame_mock.empty = False
         previous_frame_mock.indicators = {}
         previous_frame_mock.previous_frame = None
         frame_mock.previous_frame = previous_frame_mock
@@ -81,8 +82,28 @@ class TestPrevious:
 
         frame_mock = mocker.Mock()
         previous_frame_mock = mocker.Mock()
+        previous_frame_mock.empty = False
         previous_frame_mock.indicators = {"my_ref": "my_indicator"}
         frame_mock.previous_frame = previous_frame_mock
+        biv.frame = frame_mock
+
+        assert biv.previous == "my_indicator"
+
+    def test_skip_empty(self, mocker):
+        biv = BaseIndicatorValueFactory(indicator=BaseIndicatorFactory(ref="my_ref"))
+
+        frame_mock = mocker.Mock()
+
+        prev_prev_frame = mocker.Mock()
+        prev_prev_frame.empty = False
+        prev_prev_frame.indicators = {"my_ref": "my_indicator"}
+
+        previous_frame_mock = mocker.Mock()
+        previous_frame_mock.empty = True
+        previous_frame_mock.previous_frame = prev_prev_frame
+
+        frame_mock.previous_frame = previous_frame_mock
+
         biv.frame = frame_mock
 
         assert biv.previous == "my_indicator"

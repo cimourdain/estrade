@@ -108,6 +108,7 @@ class TestCreateNewFrame:
                 period_start=period_start,
                 period_end=None,
                 previous_frame=None,
+                empty=False,
             )
         ]
 
@@ -126,6 +127,7 @@ class TestCreateNewFrame:
                 period_start=period_start,
                 period_end=period_end,
                 previous_frame=None,
+                empty=False,
             )
         ]
 
@@ -150,6 +152,7 @@ class TestCreateNewFrame:
                 period_start=period_start,
                 period_end=None,
                 previous_frame=mock_current,
+                empty=False,
             )
         ]
 
@@ -396,16 +399,19 @@ class TestOnNewTickTimed:
                 current_last_tick,
                 arrow.get("2020-01-01 12:34:20"),
                 arrow.get("2020-01-01 12:34:30"),
+                empty=True,
             ),
             call(
                 current_last_tick,
                 arrow.get("2020-01-01 12:34:30"),
                 arrow.get("2020-01-01 12:34:40"),
+                empty=True,
             ),
             call(
                 current_last_tick,
                 arrow.get("2020-01-01 12:34:40"),
                 arrow.get("2020-01-01 12:34:50"),
+                empty=True,
             ),
             call(
                 new_tick,

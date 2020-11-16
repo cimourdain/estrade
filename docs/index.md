@@ -6,18 +6,18 @@
 
 <div align="center">
 <a href="https://travis-ci.com/cimourdain/estrade">
-    <img src="https://travis-ci.com/cimourdain/estrade.svg?branch=master" alt="Build Status" />
+    <img src="https://travis-ci.com/cimourdain/estrade.svg?branch=v0.2.1" alt="Build Status" />
 </a>
-<a href='https://estrade.readthedocs.io/en/latest'>
-    <img src='https://readthedocs.org/projects/estrade/badge/?version=latest' alt='Documentation Status' />
+<a href='https://estrade.readthedocs.io/en/v0.2.1'>
+    <img src='https://readthedocs.org/projects/estrade/badge/?version=v0.2.1' alt='Documentation Status' />
 </a>
 <img src="https://badgen.net/badge/python/3.6,3.7,3.8?list=|" alt="python version" />
-<img src="https://badgen.net/badge/version/0.2.0" alt="current app version" />
+<img src="https://badgen.net/badge/version/0.2.1" alt="current app version" />
 <a href="https://pypi.org/project/estrade/">
     <img src="https://badgen.net/pypi/v/estrade" alt="PyPi version" />
 </a>
-<img src="https://badgen.net/badge/coverage/96%25" alt="Coverage" />
-<img src="https://badgen.net/badge/complexity/A%20%281.9210526315789473%29" alt="Complexity" />
+<img src="https://badgen.net/badge/coverage/95%25" alt="Coverage" />
+<img src="https://badgen.net/badge/complexity/A%20%281.9957081545064377%29" alt="Complexity" />
 <a href="https://gitlab.com/pycqa/flake8">
     <img src="https://badgen.net/badge/lint/flake8/purple" alt="Lint" />
 </a>
