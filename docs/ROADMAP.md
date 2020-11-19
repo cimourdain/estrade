@@ -2,7 +2,6 @@
 
 - [ ] Tests:
     - [ ] CSV Reporting
-- [ ] TradeProvider Update Trade ?
 - [ ] Account Management
 - [ ] Documentation Samples
 
