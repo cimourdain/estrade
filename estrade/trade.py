@@ -106,22 +106,6 @@ class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
             "New %s trade created: %s @ %s", self.direction, self.ref, self.open_value
         )
 
-    def _init_stop(
-        self, stop_absolute: Optional[float], stop_relative: Optional[float]
-    ):
-        if stop_absolute:
-            self.set_stop_absolute(stop_absolute, send_provider_update=False)
-        elif stop_relative:
-            self.set_stop_relative(stop_relative, send_provider_update=False)
-
-    def _init_limit(
-        self, limit_absolute: Optional[float], limit_relative: Optional[float]
-    ):
-        if limit_absolute:
-            self.set_limit_absolute(limit_absolute, send_provider_update=False)
-        elif limit_relative:
-            self.set_limit_relative(limit_relative, send_provider_update=False)
-
     def asdict(self) -> Dict[str, Any]:
         dict_representation = {
             "ref": self.ref,
@@ -258,104 +242,6 @@ class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
     def update_from_epic(self) -> None:
         """Update current trade from its Epic current value."""
         self.update_from_tick(self.epic.last_tick)
-
-    def set_stop_absolute(
-        self, absolute_stop: float, send_provider_update=True
-    ) -> None:
-        """
-        Add a stop by its absolute value on the current instance.
-
-        Arguments:
-            absolute_stop: stop absolute value
-            send_provider_update: send an update to provider to notify the stop update
-        """
-        if self.direction == TradeDirection.BUY and absolute_stop >= self.open_value:
-            raise TradeException(
-                f"Impossible to set a stop ({absolute_stop}) "
-                f">= current value ({self.current_close_value})"
-            )
-        elif self.direction == TradeDirection.SELL and absolute_stop <= self.open_value:
-            raise TradeException(
-                f"Impossible to set a stop ({absolute_stop}) "
-                f"<= current value ({self.current_close_value})"
-            )
-
-        self.absolute_stop = absolute_stop
-        if send_provider_update:
-            self.epic.trade_provider.update_stop(trade=self)  # type: ignore
-
-    def set_stop_relative(
-        self, relative_stop: float, send_provider_update=True
-    ) -> None:
-        """
-        Add a stop by its relative value on the current instance.
-
-        Arguments:
-            relative_stop: stop absolute value
-            send_provider_update: send an update to provider to notify the stop update
-
-        !!! note
-
-            stop is relative to the trade open value.
-        """
-        if self.direction == TradeDirection.BUY:
-            self.set_stop_absolute(
-                self.open_value - relative_stop, send_provider_update
-            )
-        else:
-            self.set_stop_absolute(
-                self.open_value + relative_stop, send_provider_update
-            )
-
-    def set_limit_absolute(
-        self, absolute_limit: float, send_provider_update=True
-    ) -> None:
-        """
-        Add a limit by its absolute value on the current instance.
-
-        Arguments:
-            absolute_limit: limit absolute value
-            send_provider_update: send an update to provider to notify the limit update
-        """
-        if self.direction == TradeDirection.BUY and absolute_limit <= self.open_value:
-            raise TradeException(
-                f"Impossible to set a stop ({absolute_limit}) "
-                f"<= current value ({self.current_close_value})"
-            )
-        elif (
-            self.direction == TradeDirection.SELL and absolute_limit >= self.open_value
-        ):
-            raise TradeException(
-                f"Impossible to set a stop ({absolute_limit}) "
-                f">= current value ({self.current_close_value})"
-            )
-
-        self.absolute_limit = absolute_limit
-        if send_provider_update:
-            self.epic.trade_provider.update_limit(trade=self)  # type: ignore
-
-    def set_limit_relative(
-        self, relative_limit: float, send_provider_update=True
-    ) -> None:
-        """
-        Add a limit by its relative value on the current instance.
-
-        Arguments:
-            relative_limit: limit absolute value
-            send_provider_update: send an update to provider to notify the limit update
-
-        !!! note
-
-            limit is relative to the trade open value.
-        """
-        if self.direction == TradeDirection.BUY:
-            self.set_limit_absolute(
-                self.open_value + relative_limit, send_provider_update
-            )
-        else:
-            self.set_limit_absolute(
-                self.open_value - relative_limit, send_provider_update
-            )
 
     ####################
     # Close
@@ -545,6 +431,166 @@ class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
             trade average result (does not takes quantities into account)
         """
         return round(self.result / self.open_quantity, 2)
+
+    ####################
+    # Stop/Limit management
+    ####################
+    def _init_stop(
+        self, stop_absolute: Optional[float], stop_relative: Optional[float]
+    ):
+        if stop_absolute:
+            self._set_stop_absolute(
+                absolute_stop=stop_absolute, send_provider_update=False
+            )
+        elif stop_relative:
+            self._set_stop_relative(stop_relative, send_provider_update=False)
+
+    def _init_limit(
+        self, limit_absolute: Optional[float], limit_relative: Optional[float]
+    ):
+        if limit_absolute:
+            self._set_limit_absolute(limit_absolute, send_provider_update=False)
+        elif limit_relative:
+            self._set_limit_relative(limit_relative, send_provider_update=False)
+
+    def _set_stop_absolute(
+        self, absolute_stop: float, send_provider_update: bool = True
+    ) -> None:
+        if self.direction == TradeDirection.BUY and absolute_stop >= self.open_value:
+            raise TradeException(
+                f"Impossible to set a stop ({absolute_stop}) "
+                f">= current value ({self.current_close_value})"
+            )
+        elif self.direction == TradeDirection.SELL and absolute_stop <= self.open_value:
+            raise TradeException(
+                f"Impossible to set a stop ({absolute_stop}) "
+                f"<= current value ({self.current_close_value})"
+            )
+
+        self.absolute_stop = absolute_stop
+        if send_provider_update:
+            self.epic.trade_provider.update_stop(trade=self)  # type: ignore
+
+    def set_stop_absolute(self, absolute_stop: float) -> None:
+        """
+        Add a stop by its absolute value on the current instance.
+
+        Arguments:
+            absolute_stop: stop absolute value
+        """
+        self._set_stop_absolute(absolute_stop=absolute_stop, send_provider_update=True)
+
+    def _set_stop_relative(
+        self, relative_stop: float, send_provider_update: bool = True
+    ) -> None:
+        """
+        Add a stop by its relative value on the current instance.
+
+        Arguments:
+            relative_stop: stop absolute value
+            send_provider_update: send an update to provider to notify the stop update
+
+        !!! note
+
+            stop is relative to the trade open value.
+        """
+        if self.direction == TradeDirection.BUY:
+            self._set_stop_absolute(
+                self.open_value - relative_stop, send_provider_update
+            )
+        else:
+            self._set_stop_absolute(
+                self.open_value + relative_stop, send_provider_update
+            )
+
+    def set_stop_relative(self, relative_stop: float) -> None:
+        """
+        Add a stop by its relative value on the current instance.
+
+        Arguments:
+            relative_stop: stop absolute value
+
+        !!! note
+
+            stop is relative to the trade open value.
+        """
+        self._set_stop_relative(relative_stop=relative_stop, send_provider_update=True)
+
+    def _set_limit_absolute(
+        self, absolute_limit: float, send_provider_update=True
+    ) -> None:
+        """
+        Add a limit by its absolute value on the current instance.
+
+        Arguments:
+            absolute_limit: limit absolute value
+            send_provider_update: send an update to provider to notify the limit update
+        """
+        if self.direction == TradeDirection.BUY and absolute_limit <= self.open_value:
+            raise TradeException(
+                f"Impossible to set a stop ({absolute_limit}) "
+                f"<= current value ({self.current_close_value})"
+            )
+        elif (
+            self.direction == TradeDirection.SELL and absolute_limit >= self.open_value
+        ):
+            raise TradeException(
+                f"Impossible to set a stop ({absolute_limit}) "
+                f">= current value ({self.current_close_value})"
+            )
+
+        self.absolute_limit = absolute_limit
+        if send_provider_update:
+            self.epic.trade_provider.update_limit(trade=self)  # type: ignore
+
+    def set_limit_absolute(self, absolute_limit: float) -> None:
+        """
+        Add a limit by its absolute value on the current instance.
+
+        Arguments:
+            absolute_limit: limit absolute value
+        """
+        self._set_limit_absolute(
+            absolute_limit=absolute_limit, send_provider_update=True
+        )
+
+    def _set_limit_relative(
+        self, relative_limit: float, send_provider_update=True
+    ) -> None:
+        """
+        Add a limit by its relative value on the current instance.
+
+        Arguments:
+            relative_limit: limit absolute value
+            send_provider_update: send an update to provider to notify the limit update
+
+        !!! note
+
+            limit is relative to the trade open value.
+        """
+        if self.direction == TradeDirection.BUY:
+            self._set_limit_absolute(
+                self.open_value + relative_limit, send_provider_update
+            )
+        else:
+            self._set_limit_absolute(
+                self.open_value - relative_limit, send_provider_update
+            )
+
+    def set_limit_relative(self, relative_limit: float) -> None:
+        """
+        Add a limit by its relative value on the current instance.
+
+        Arguments:
+            relative_limit: limit absolute value
+
+        !!! note
+
+            limit is relative to the trade open value.
+        """
+        self._set_limit_relative(
+            relative_limit=relative_limit, send_provider_update=True
+        )
 
 
 class TradeClose(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
