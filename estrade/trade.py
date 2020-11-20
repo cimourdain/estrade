@@ -16,7 +16,197 @@ if TYPE_CHECKING:  # pragma: no cover
 logger = logging.getLogger(__name__)
 
 
-class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
+class StopLimitMixin:
+    def __init__(
+        self,
+        stop_absolute: Optional[float],
+        stop_relative: Optional[float],
+        limit_absolute: Optional[float],
+        limit_relative: Optional[float],
+    ) -> None:
+        self.direction: TradeDirection
+        self.epic: Epic
+        self.open_value: float
+        self.current_close_value: float
+
+        self.stop_absolute = stop_absolute
+        self.stop_relative = stop_relative
+        self.limit_absolute = limit_absolute
+        self.limit_relative = limit_relative
+
+    @property
+    def stop_absolute(self):
+        """
+        Stop value of the current trade.
+
+        Returns:
+            stop value.
+        """
+        return self._stop_absolute
+
+    @stop_absolute.setter
+    def stop_absolute(self, stop_absolute: Optional[float]) -> None:
+        self._stop_absolute = None
+
+        if stop_absolute is None:
+            return
+
+        if self.direction == TradeDirection.BUY and stop_absolute >= self.open_value:
+            raise TradeException(
+                f"Impossible to set a stop ({stop_absolute}) "
+                f">= current value ({self.current_close_value})"
+            )
+        elif self.direction == TradeDirection.SELL and stop_absolute <= self.open_value:
+            raise TradeException(
+                f"Impossible to set a stop ({stop_absolute}) "
+                f"<= current value ({self.current_close_value})"
+            )
+
+        self._stop_absolute = stop_absolute
+
+    @property
+    def stop_relative(self) -> Optional[float]:
+        """
+        Stop value of the current trade relative to open value.
+
+        Returns:
+            stop value.
+        """
+        if self.stop_absolute:
+            return abs(self.open_value - self.stop_absolute)
+        return None
+
+    @stop_relative.setter
+    def stop_relative(self, stop_relative: Optional[float]):
+        if stop_relative is None:
+            return
+
+        if self.direction == TradeDirection.BUY:
+            self.stop_absolute = self.open_value - stop_relative
+        else:
+            self.stop_absolute = self.open_value + stop_relative
+
+    @property
+    def limit_absolute(self):
+        """
+        Limit value of the current trade.
+
+        Returns:
+            limit value.
+        """
+        return self._limit_absolute
+
+    @limit_absolute.setter
+    def limit_absolute(self, limit_absolute: Optional[float]) -> None:
+        self._limit_absolute = None
+
+        if limit_absolute is None:
+            return
+
+        if self.direction == TradeDirection.BUY and limit_absolute <= self.open_value:
+            raise TradeException(
+                f"Impossible to set a limit ({limit_absolute}) "
+                f"<= current value ({self.current_close_value})"
+            )
+        elif (
+            self.direction == TradeDirection.SELL and limit_absolute >= self.open_value
+        ):
+            raise TradeException(
+                f"Impossible to set a limit ({limit_absolute}) "
+                f">= current value ({self.current_close_value})"
+            )
+
+        self._limit_absolute = limit_absolute
+
+    @property
+    def limit_relative(self) -> Optional[float]:
+        """
+        Limit value of the current trade relative to open value.
+
+        Returns:
+            limit value.
+        """
+        if self.limit_absolute:
+            return abs(self.open_value - self.limit_absolute)
+        return None
+
+    @limit_relative.setter
+    def limit_relative(self, limit_relative: Optional[float]) -> None:
+        if limit_relative is None:
+            return
+
+        if self.direction == TradeDirection.BUY:
+            self.limit_absolute = self.open_value + limit_relative
+        else:
+            self.limit_absolute = self.open_value - limit_relative
+
+    def update_stop_absolute(self, stop_absolute: float) -> None:
+        """
+        Add a stop by its absolute value on the current instance.
+
+        Arguments:
+            stop_absolute: stop absolute value
+        """
+        self.stop_absolute = stop_absolute
+        self.epic.trade_provider.update_stop(trade=self)  # type: ignore
+
+    def update_stop_relative(self, stop_relative: float) -> None:
+        """
+        Add a stop by its relative value on the current instance.
+
+        Arguments:
+            stop_relative: stop absolute value
+
+        !!! note
+
+            stop is relative to the trade open value.
+        """
+        self.stop_relative = stop_relative
+        self.epic.trade_provider.update_stop(trade=self)  # type: ignore
+
+    def update_limit_absolute(self, limit_absolute: float) -> None:
+        """
+        Add a limit by its absolute value on the current instance.
+
+        Arguments:
+            limit_absolute: limit absolute value
+        """
+        self.limit_absolute = limit_absolute
+        self.epic.trade_provider.update_limit(trade=self)  # type: ignore
+
+    def update_limit_relative(self, limit_relative: float) -> None:
+        """
+        Add a limit by its relative value on the current instance.
+
+        Arguments:
+            limit_relative: limit absolute value
+
+        !!! note
+
+            limit is relative to the trade open value.
+        """
+        self.limit_relative = limit_relative
+        self.epic.trade_provider.update_limit(trade=self)  # type: ignore
+
+    def _stop_limit_reached(self) -> bool:
+        if self.direction == TradeDirection.BUY:
+            if self.stop_absolute and self.current_close_value <= self.stop_absolute:
+                return True
+            elif (
+                self.limit_absolute and self.current_close_value >= self.limit_absolute
+            ):
+                return True
+        else:
+            if self.stop_absolute and self.current_close_value >= self.stop_absolute:
+                return True
+            elif (
+                self.limit_absolute and self.current_close_value <= self.limit_absolute
+            ):
+                return True
+        return False
+
+
+class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin, StopLimitMixin):
     """
     Trade object representation.
 
@@ -91,10 +281,13 @@ class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
         self.max_result: float = self.result
         self.min_result: float = self.result
 
-        self.stop_absolute: Optional[float] = None
-        self.limit_absolute: Optional[float] = None
-        self._init_stop(stop_absolute, stop_relative)
-        self._init_limit(limit_absolute, limit_relative)
+        StopLimitMixin.__init__(
+            self,
+            stop_absolute=stop_absolute,
+            stop_relative=stop_relative,
+            limit_absolute=limit_absolute,
+            limit_relative=limit_relative,
+        )
 
         RefMixin.__init__(self, ref)
         TimedMixin.__init__(self, open_datetime)
@@ -180,23 +373,6 @@ class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
             self.max_result = self.result
         if self.result < self.min_result:
             self.min_result = self.result
-
-    def _stop_limit_reached(self) -> bool:
-        if self.direction == TradeDirection.BUY:
-            if self.stop_absolute and self.current_close_value <= self.stop_absolute:
-                return True
-            elif (
-                self.limit_absolute and self.current_close_value >= self.limit_absolute
-            ):
-                return True
-        else:
-            if self.stop_absolute and self.current_close_value >= self.stop_absolute:
-                return True
-            elif (
-                self.limit_absolute and self.current_close_value <= self.limit_absolute
-            ):
-                return True
-        return False
 
     def update(self, current_close_value: float) -> None:
         """
@@ -431,156 +607,6 @@ class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
             trade average result (does not takes quantities into account)
         """
         return round(self.result / self.open_quantity, 2)
-
-    ####################
-    # Stop/Limit management
-    ####################
-    @property
-    def stop_absolute(self):
-        return self._stop_absolute
-
-    @stop_absolute.setter
-    def stop_absolute(self, stop_absolute: Optional[float]) -> None:
-        self._stop_absolute = None
-
-        if stop_absolute is None:
-            return
-
-        if self.direction == TradeDirection.BUY and stop_absolute >= self.open_value:
-            raise TradeException(
-                f"Impossible to set a stop ({stop_absolute}) "
-                f">= current value ({self.current_close_value})"
-            )
-        elif self.direction == TradeDirection.SELL and stop_absolute <= self.open_value:
-            raise TradeException(
-                f"Impossible to set a stop ({stop_absolute}) "
-                f"<= current value ({self.current_close_value})"
-            )
-
-        self._stop_absolute = stop_absolute
-
-    @property
-    def stop_relative(self) -> Optional[float]:
-        if self.stop_absolute:
-            return abs(self.open_value - self.stop_absolute)
-        return None
-
-    @stop_relative.setter
-    def stop_relative(self, stop_relative: Optional[float]):
-        if stop_relative is None:
-            return
-
-        if self.direction == TradeDirection.BUY:
-            self.stop_absolute = self.open_value - stop_relative
-        else:
-            self.stop_absolute = self.open_value + stop_relative
-
-    @property
-    def limit_absolute(self):
-        return self._limit_absolute
-
-    @limit_absolute.setter
-    def limit_absolute(self, limit_absolute: Optional[float]) -> None:
-        self._limit_absolute = None
-
-        if limit_absolute is None:
-            return
-
-        if self.direction == TradeDirection.BUY and limit_absolute <= self.open_value:
-            raise TradeException(
-                f"Impossible to set a limit ({limit_absolute}) "
-                f"<= current value ({self.current_close_value})"
-            )
-        elif (
-            self.direction == TradeDirection.SELL and limit_absolute >= self.open_value
-        ):
-            raise TradeException(
-                f"Impossible to set a limit ({limit_absolute}) "
-                f">= current value ({self.current_close_value})"
-            )
-
-        self._limit_absolute = limit_absolute
-
-    @property
-    def limit_relative(self) -> Optional[float]:
-        if self.limit_absolute:
-            return abs(self.open_value - self.limit_absolute)
-        return None
-
-    @limit_relative.setter
-    def limit_relative(self, limit_relative: Optional[float]) -> None:
-        if limit_relative is None:
-            return
-
-        if self.direction == TradeDirection.BUY:
-            self.limit_absolute = self.open_value + limit_relative
-        else:
-            self.limit_absolute = self.open_value - limit_relative
-
-    def _init_stop(
-        self, stop_absolute: Optional[float], stop_relative: Optional[float]
-    ):
-        self.stop_absolute = None
-        if stop_absolute:
-            self.stop_absolute = stop_absolute
-        elif stop_relative:
-            self.stop_relative = stop_relative
-
-    def _init_limit(
-        self, limit_absolute: Optional[float], limit_relative: Optional[float]
-    ):
-        if limit_absolute:
-            self.limit_absolute = limit_absolute
-        elif limit_relative:
-            self.limit_relative = limit_relative
-
-    def update_stop_absolute(self, stop_absolute: float) -> None:
-        """
-        Add a stop by its absolute value on the current instance.
-
-        Arguments:
-            stop_absolute: stop absolute value
-        """
-        self.stop_absolute = stop_absolute
-        self.epic.trade_provider.update_stop(trade=self)  # type: ignore
-
-    def update_stop_relative(self, stop_relative: float) -> None:
-        """
-        Add a stop by its relative value on the current instance.
-
-        Arguments:
-            stop_relative: stop absolute value
-
-        !!! note
-
-            stop is relative to the trade open value.
-        """
-        self.stop_relative = stop_relative
-        self.epic.trade_provider.update_stop(trade=self)  # type: ignore
-
-    def update_limit_absolute(self, limit_absolute: float) -> None:
-        """
-        Add a limit by its absolute value on the current instance.
-
-        Arguments:
-            limit_absolute: limit absolute value
-        """
-        self.limit_absolute = limit_absolute
-        self.epic.trade_provider.update_limit(trade=self)  # type: ignore
-
-    def update_limit_relative(self, limit_relative: float) -> None:
-        """
-        Add a limit by its relative value on the current instance.
-
-        Arguments:
-            limit_relative: limit absolute value
-
-        !!! note
-
-            limit is relative to the trade open value.
-        """
-        self.limit_relative = limit_relative
-        self.epic.trade_provider.update_limit(trade=self)  # type: ignore
 
 
 class TradeClose(MetaMixin, TimedMixin, RefMixin, TransactionMixin):
