@@ -35,7 +35,7 @@ class StopLimitMixin:
         self.limit_relative = limit_relative
 
     @property
-    def stop_absolute(self):
+    def stop_absolute(self) -> Optional[float]:
         """
         Stop value of the current trade.
 
@@ -87,7 +87,7 @@ class StopLimitMixin:
             self.stop_absolute = self.open_value + stop_relative
 
     @property
-    def limit_absolute(self):
+    def limit_absolute(self) -> Optional[float]:
         """
         Limit value of the current trade.
 
@@ -220,8 +220,6 @@ class Trade(MetaMixin, TimedMixin, RefMixin, TransactionMixin, StopLimitMixin):
         current_close_value (float): current market value to close this trade.
         max_result (float): max result of this instance
         min_result (float): min result of this instance
-        stop_absolute (Optional[float]): stop value for this trade
-        limit_absolute (Optional[float]): limit value for this trade
 
         ref (str): reference of this instance
             (see `estrade.mixins.ref.RefMixin`)
