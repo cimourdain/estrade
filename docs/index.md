@@ -16,8 +16,8 @@
 <a href="https://pypi.org/project/estrade/">
     <img src="https://badgen.net/pypi/v/estrade" alt="PyPi version" />
 </a>
-<img src="https://badgen.net/badge/coverage/96%25" alt="Coverage" />
-<img src="https://badgen.net/badge/complexity/A%20%281.987551867219917%29" alt="Complexity" />
+<img src="https://badgen.net/badge/coverage/95%25" alt="Coverage" />
+<img src="https://badgen.net/badge/complexity/A%20%281.9718875502008033%29" alt="Complexity" />
 <a href="https://gitlab.com/pycqa/flake8">
     <img src="https://badgen.net/badge/lint/flake8/purple" alt="Lint" />
 </a>

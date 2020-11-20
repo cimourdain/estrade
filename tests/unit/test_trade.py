@@ -156,12 +156,12 @@ class TestInitStopLimit:
     def test_stop_default(self):
         trade = TradeFactory(stop_relative=None, stop_absolute=None)
 
-        assert trade.absolute_stop is None
+        assert trade.stop_absolute is None
 
     def test_stop_absolute(self):
         trade = TradeFactory(open_value=100, stop_relative=None, stop_absolute=20.56)
 
-        assert trade.absolute_stop == 20.56
+        assert trade.stop_absolute == 20.56
 
     def test_stop_absolute__trade_provider_call(self, mocker):
         update_trade_stop = mocker.patch(
@@ -174,7 +174,7 @@ class TestInitStopLimit:
     def test_stop_relative(self):
         trade = TradeFactory(open_value=100, stop_relative=5.67, stop_absolute=None)
 
-        assert trade.absolute_stop == 94.33
+        assert trade.stop_absolute == 94.33
 
     def test_stop_relative__trade_provider_call(self, mocker):
         update_trade_stop = mocker.patch(
@@ -187,12 +187,12 @@ class TestInitStopLimit:
     def test_limit_default(self):
         trade = TradeFactory(limit_relative=None, limit_absolute=None)
 
-        assert trade.absolute_limit is None
+        assert trade.limit_absolute is None
 
     def test_limit_absolute(self):
         trade = TradeFactory(open_value=100, limit_relative=None, limit_absolute=120.56)
 
-        assert trade.absolute_limit == 120.56
+        assert trade.limit_absolute == 120.56
 
     def test_limit_absolute__trade_provider_call(self, mocker):
         update_trade_limit = mocker.patch(
@@ -205,7 +205,7 @@ class TestInitStopLimit:
     def test_limit_relative(self):
         trade = TradeFactory(open_value=100, limit_relative=5.67, limit_absolute=None)
 
-        assert trade.absolute_limit == 105.67
+        assert trade.limit_absolute == 105.67
 
     def test_limit_relative__trade_provider_call(self, mocker):
         update_trade_limit = mocker.patch(
@@ -592,9 +592,9 @@ class TestStop:
         trade = TradeFactory(
             direction=direction, open_value=open, current_close_value=current_close
         )
-        trade.set_stop_absolute(stop)
+        trade.update_stop_absolute(stop)
 
-        assert trade.absolute_stop == stop
+        assert trade.stop_absolute == stop
         assert mock_trade_provider_update_stop.call_args_list == [call(trade=trade)]
 
     @pytest.mark.parametrize(
@@ -611,7 +611,7 @@ class TestStop:
             direction=direction, open_value=open, current_close_value=current_close
         )
         with pytest.raises(TradeException):
-            trade.set_stop_absolute(stop)
+            trade.update_stop_absolute(stop)
 
     @pytest.mark.parametrize(
         ["direction", "open", "current_close", "stop_relative", "expected_absolute"],
@@ -632,9 +632,9 @@ class TestStop:
         trade = TradeFactory(
             direction=direction, open_value=open, current_close_value=current_close
         )
-        trade.set_stop_relative(stop_relative)
+        trade.update_stop_relative(stop_relative)
 
-        assert trade.absolute_stop == expected_absolute
+        assert trade.stop_absolute == expected_absolute
         assert mock_trade_provider_update_stop.call_args_list == [call(trade=trade)]
 
     @pytest.mark.parametrize(
@@ -700,9 +700,9 @@ class TestLimit:
         trade = TradeFactory(
             direction=direction, open_value=open, current_close_value=current_close
         )
-        trade.set_limit_absolute(limit)
+        trade.update_limit_absolute(limit)
 
-        assert trade.absolute_limit == limit
+        assert trade.limit_absolute == limit
         assert mock_trade_provider_update_limit.call_args_list == [call(trade=trade)]
 
     @pytest.mark.parametrize(
@@ -719,7 +719,7 @@ class TestLimit:
             direction=direction, open_value=open, current_close_value=current_close
         )
         with pytest.raises(TradeException):
-            trade.set_limit_absolute(limit)
+            trade.update_limit_absolute(limit)
 
     @pytest.mark.parametrize(
         ["direction", "open", "current_close", "limit_relative", "expected_absolute"],
@@ -740,9 +740,9 @@ class TestLimit:
         trade = TradeFactory(
             direction=direction, open_value=open, current_close_value=current_close
         )
-        trade.set_limit_relative(limit_relative)
+        trade.update_limit_relative(limit_relative)
 
-        assert trade.absolute_limit == expected_absolute
+        assert trade.limit_absolute == expected_absolute
         assert mock_trade_provider_update_limit.call_args_list == [call(trade=trade)]
 
     @pytest.mark.parametrize(
