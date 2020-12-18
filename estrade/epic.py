@@ -244,7 +244,8 @@ class Epic(RefMixin):
         tick.datetime = tick.datetime.to(self.timezone)
         if tick.datetime < self.last_tick.datetime:
             raise EpicException(
-                "Cannot handle a tick anterior to the last received tick."
+                f"Cannot handle a tick {tick.datetime} "
+                f"anterior to the last received tick {self.last_tick.datetime}."
             )
 
         # update last tick
