@@ -37,6 +37,9 @@ nav:
   - Home: index.md
   - Install: install.md
   - Tutorial: tutorial.md
+  - Guide:
+      Tick: guide/tick.md
+      Epic: guide/epic.md
   - Reference:
       Tick: reference/tick.md
       Epic: reference/epic.md
