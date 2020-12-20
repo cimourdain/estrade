@@ -33,6 +33,7 @@ class Epic(RefMixin):
         close_time (datetime.time): current instance close time
         trade_days (List[int]): List of trading days for this Epic (monday=0)
         holidays (List[datetime.date]): List of holidays for this instance.
+        market_open (bool): is market open for trading?
         frame_sets (Dict[str, "FrameSet"]): Dict of frame sets indexed by
             their reference.
         strategies (Dict[str, "BaseStrategy"]): Dict of strategies indexed by
