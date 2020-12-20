@@ -1,5 +1,4 @@
 import arrow
-from dateutil import tz
 
 from estrade import Epic, Tick
 

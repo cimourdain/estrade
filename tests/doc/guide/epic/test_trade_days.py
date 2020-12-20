@@ -1,5 +1,3 @@
-from datetime import time
-
 import arrow
 
 from estrade import Epic, Tick
@@ -7,10 +5,7 @@ from estrade import Epic, Tick
 
 def test_open_periods():
     # WHEN I create an epic tradeable only on Tuesday and Thursday
-    epic = Epic(
-        ref="MY_EPIC_REF",
-        trade_days=[1, 3]
-    )
+    epic = Epic(ref="MY_EPIC_REF", trade_days=[1, 3])
 
     # WHEN a tick is received on Monday
     fmt = r"ddd[\s+]DD[\s+]MMM[\s+]YYYY[\s+]HH:mm:ss"
